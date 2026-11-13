@@ -1,0 +1,50 @@
+name: PS4 Build Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ps4/**"
+      - "tools/setup_repo.py"
+      - ".github/workflows/ps4-validation.yml"
+  pull_request:
+    paths:
+      - "ps4/**"
+      - "tools/setup_repo.py"
+      - ".github/workflows/ps4-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository without game assets or submodules
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate repository metadata
+        run: python tools/setup_repo.py --check-metadata
+      - name: Check PS4 shell script syntax
+        run: |
+          set -euo pipefail
+          for script in ps4/scripts/*.sh; do
+            bash -n "$script"
+            echo "Syntax OK: $script"
+          done
+      - name: Verify required PS4 build scripts
+        run: |
+          set -euo pipefail
+          for script in ps4-env.sh setup-toolchain.sh build-ps4.sh package-ps4.sh make-pkg.sh; do
+            test -s "ps4/scripts/$script"
+            echo "Found: $script"
+          done
+          test -s ps4/README.md
+          echo "PS4 build documentation found"
