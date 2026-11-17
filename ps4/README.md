@@ -91,7 +91,8 @@ Then:
 
 ```bash
 bash ps4/scripts/setup-toolchain.sh        # once: overlay toolchain, host shader tools, DXC
-bash ps4/scripts/build-ps4.sh              # configure + build
+bash ps4/scripts/check-build-prerequisites.sh # read-only: verify all build inputs
+bash ps4/scripts/build-ps4.sh              # checks prerequisites, then configure + build
 bash ps4/scripts/package-ps4.sh 01.00      # -> fake PKG (bump the version for every install)
 ```
 
@@ -115,3 +116,7 @@ bash ps4/scripts/package-ps4.sh 01.00      # -> fake PKG (bump the version for e
 - The next steps that looked worthwhile: a shorter draw distance (fewer draws for both busy
   threads), cheaper command allocation, and splitting the render worker's intake and recording
   across two threads. See the measurements above for why none of them reaches 30 fps alone.
+
+
+For pinned upstream revisions, configurable `DOLPHIN_BUILD`/`DOLPHIN_SYSROOT` paths, and the
+full prerequisite list, see [DEPENDENCIES.md](DEPENDENCIES.md).
