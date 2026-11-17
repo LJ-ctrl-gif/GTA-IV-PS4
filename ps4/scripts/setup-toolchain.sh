@@ -3,6 +3,14 @@
 # and stages the extracted game files. Existing toolchain directories are preserved as backups.
 set -euo pipefail
 
+PREFLIGHT_ONLY=false
+if [[ "${1:-}" == "--preflight-only" ]]; then
+    PREFLIGHT_ONLY=true
+elif [[ "$#" -gt 0 ]]; then
+    echo "ERROR: unknown argument: $1" >&2
+    exit 2
+fi
+
 # The pinned Microsoft DXC release used below only provides a Linux x86_64 asset.
 # Reject unsupported hosts before sourcing the environment or touching build paths.
 HOST_OS="$(uname -s)"
@@ -48,6 +56,10 @@ LR_ROOT="$LR_PARENT/$LR_BASE"
 
 if [[ -L "$LR_ROOT" ]]; then
     echo "ERROR: LR_ROOT must not be a symbolic link: $LR_ROOT" >&2
+    exit 1
+fi
+if [[ -e "$LR_ROOT" && ! -d "$LR_ROOT" ]]; then
+    echo "ERROR: LR_ROOT exists but is not a directory: $LR_ROOT" >&2
     exit 1
 fi
 if [[ "$LR_ROOT" == "$HOME_REAL" ]]; then
@@ -101,6 +113,10 @@ done
 # All path checks have passed. Creating LR_ROOT is now safe.
 if [[ ! -d "$LR_ROOT" ]]; then
     mkdir -- "$LR_ROOT"
+fi
+if [[ "$PREFLIGHT_ONLY" == true ]]; then
+    echo "PS4 toolchain path preflight passed: $LR_ROOT"
+    exit 0
 fi
 
 export LR_ROOT
