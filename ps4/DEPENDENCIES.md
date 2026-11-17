@@ -105,7 +105,12 @@ Run from the repository root in the Linux build environment:
 
 ```bash
 python3 tools/setup_repo.py --check
+bash ps4/scripts/prepare-mesa-source.sh
+python3 -m venv "$DOLPHIN_BUILD/mesa-venv"
+"$DOLPHIN_BUILD/mesa-venv/bin/pip" install meson mako pyyaml
+# Provision the pinned DolphinPS4 sysroot, Dolphin/glslang source and libdrm headers first.
 bash ps4/scripts/setup-toolchain.sh
+bash ps4/scripts/build-mesa.sh setup
 bash ps4/scripts/check-build-prerequisites.sh
 bash ps4/scripts/build-ps4.sh all
 bash ps4/scripts/package-ps4.sh 01.00
