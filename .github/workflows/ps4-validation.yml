@@ -49,7 +49,7 @@ jobs:
           printf '%s\n' '#!/bin/sh' 'case "$1" in' '  -s) echo Linux ;;' '  -m) echo aarch64 ;;' '  *) exit 2 ;;' 'esac' > "$test_root/bin/uname"
           chmod +x "$test_root/bin/uname"
 
-          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home/build" bash ps4/scripts/setup-toolchain.sh >"$test_root/unsupported.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$test_root/home/build" bash ps4/scripts/setup-toolchain.sh >"$test_root/unsupported.log" 2>&1; then
             echo "Expected unsupported host architecture to be rejected." >&2
             exit 1
           fi
@@ -59,20 +59,20 @@ jobs:
           printf '%s\n' '#!/bin/sh' 'case "$1" in' '  -s) echo Linux ;;' '  -m) echo x86_64 ;;' '  *) exit 2 ;;' 'esac' > "$test_root/bin/uname"
           chmod +x "$test_root/bin/uname"
 
-          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home" bash ps4/scripts/setup-toolchain.sh >"$test_root/home-root.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$test_root/home" bash ps4/scripts/setup-toolchain.sh >"$test_root/home-root.log" 2>&1; then
             echo "Expected HOME itself to be rejected as LR_ROOT." >&2
             exit 1
           fi
           grep -Fq "dedicated directory below HOME" "$test_root/home-root.log"
 
-          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$GITHUB_WORKSPACE" bash ps4/scripts/setup-toolchain.sh >"$test_root/repo-root.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$GITHUB_WORKSPACE" bash ps4/scripts/setup-toolchain.sh >"$test_root/repo-root.log" 2>&1; then
             echo "Expected the repository directory to be rejected as LR_ROOT." >&2
             exit 1
           fi
           grep -Fq "must not be inside the GTA IV repository" "$test_root/repo-root.log"
 
           ln -s "$test_root/home" "$test_root/home-link"
-          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home-link" bash ps4/scripts/setup-toolchain.sh >"$test_root/symlink-root.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$test_root/home-link" bash ps4/scripts/setup-toolchain.sh >"$test_root/symlink-root.log" 2>&1; then
             echo "Expected a symlinked LR_ROOT to be rejected." >&2
             exit 1
           fi
