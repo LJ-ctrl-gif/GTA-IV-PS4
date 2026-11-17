@@ -39,44 +39,82 @@ jobs:
             bash -n "$script"
             echo "Syntax OK: $script"
           done
-      - name: Test toolchain setup safety guards
+      - name: Test toolchain setup path validation
         run: |
           set -euo pipefail
           test_root="$(mktemp -d)"
           trap 'rm -rf -- "$test_root"' EXIT
           mkdir -p "$test_root/bin" "$test_root/home"
 
-          printf '%s\n' '#!/bin/sh' 'case "$1" in' '  -s) echo Linux ;;' '  -m) echo aarch64 ;;' '  *) exit 2 ;;' 'esac' > "$test_root/bin/uname"
+          # The unsupported host must be rejected before creating LR_ROOT.
+          printf '%s\\n' '#!/bin/sh' 'case "$1" in' '  -s) echo Linux ;;' '  -m) echo aarch64 ;;' '  *) exit 2 ;;' 'esac' > "$test_root/bin/uname"
           chmod +x "$test_root/bin/uname"
-
-          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$test_root/home/build" bash ps4/scripts/setup-toolchain.sh >"$test_root/unsupported.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home/unsupported" bash ps4/scripts/setup-toolchain.sh >"$test_root/unsupported.log" 2>&1; then
             echo "Expected unsupported host architecture to be rejected." >&2
             exit 1
           fi
           grep -Fq "requires x86_64 Linux" "$test_root/unsupported.log"
-          test ! -e "$test_root/home/build"
+          test ! -e "$test_root/home/unsupported"
 
-          printf '%s\n' '#!/bin/sh' 'case "$1" in' '  -s) echo Linux ;;' '  -m) echo x86_64 ;;' '  *) exit 2 ;;' 'esac' > "$test_root/bin/uname"
+          # All remaining checks run with a mocked supported host.
+          printf '%s\\n' '#!/bin/sh' 'case "$1" in' '  -s) echo Linux ;;' '  -m) echo x86_64 ;;' '  *) exit 2 ;;' 'esac' > "$test_root/bin/uname"
           chmod +x "$test_root/bin/uname"
 
-          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$test_root/home" bash ps4/scripts/setup-toolchain.sh >"$test_root/home-root.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/home-root.log" 2>&1; then
             echo "Expected HOME itself to be rejected as LR_ROOT." >&2
             exit 1
           fi
           grep -Fq "dedicated directory below HOME" "$test_root/home-root.log"
 
-          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$GITHUB_WORKSPACE" bash ps4/scripts/setup-toolchain.sh >"$test_root/repo-root.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$GITHUB_WORKSPACE" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/repo-root.log" 2>&1; then
             echo "Expected the repository directory to be rejected as LR_ROOT." >&2
             exit 1
           fi
           grep -Fq "must not be inside the GTA IV repository" "$test_root/repo-root.log"
 
+          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$GITHUB_WORKSPACE/build-root" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/repo-child.log" 2>&1; then
+            echo "Expected an LR_ROOT inside the repository to be rejected." >&2
+            exit 1
+          fi
+          grep -Fq "must not be inside the GTA IV repository" "$test_root/repo-child.log"
+
           ln -s "$test_root/home" "$test_root/home-link"
-          if PATH="$test_root/bin:$PATH" HOME="$GITHUB_WORKSPACE/.." LR_ROOT="$test_root/home-link" bash ps4/scripts/setup-toolchain.sh >"$test_root/symlink-root.log" 2>&1; then
+          if PATH="$test_root/bin:$PATH" HOME="$test_root" LR_ROOT="$test_root/home-link" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/symlink-root.log" 2>&1; then
             echo "Expected a symlinked LR_ROOT to be rejected." >&2
             exit 1
           fi
           grep -Fq "must not be a symbolic link" "$test_root/symlink-root.log"
+
+          # A repository nested at $LR_ROOT/src/LibertyRecomp is the documented layout.
+          nested_root="$(dirname "$GITHUB_WORKSPACE")"
+          nested_home="$(dirname "$nested_root")"
+          PATH="$test_root/bin:$PATH" HOME="$nested_home" LR_ROOT="$nested_root" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/nested-layout.log" 2>&1
+          grep -Fq "PS4 toolchain path preflight passed" "$test_root/nested-layout.log"
+
+          # Refuse symlinks and regular files in managed paths before creating any other output.
+          mkdir -p "$test_root/home/managed/host-tools"
+          ln -s "$test_root/home" "$test_root/home/managed/oo"
+          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home/managed" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/managed-symlink.log" 2>&1; then
+            echo "Expected a symlinked managed directory to be rejected." >&2
+            exit 1
+          fi
+          grep -Fq "refusing symlinked managed path" "$test_root/managed-symlink.log"
+          test ! -e "$test_root/home/managed/host-tools/bin"
+
+          rm "$test_root/home/managed/oo"
+          touch "$test_root/home/managed/host-tools/dxc"
+          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home/managed" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/managed-file.log" 2>&1; then
+            echo "Expected a regular-file collision to be rejected." >&2
+            exit 1
+          fi
+          grep -Fq "managed path exists but is not a directory" "$test_root/managed-file.log"
+
+          touch "$test_root/home/root-file"
+          if PATH="$test_root/bin:$PATH" HOME="$test_root/home" LR_ROOT="$test_root/home/root-file" bash ps4/scripts/setup-toolchain.sh --preflight-only >"$test_root/root-file.log" 2>&1; then
+            echo "Expected a non-directory LR_ROOT to be rejected." >&2
+            exit 1
+          fi
+          grep -Fq "LR_ROOT exists but is not a directory" "$test_root/root-file.log"
       - name: Verify required PS4 build scripts
         run: |
           set -euo pipefail
