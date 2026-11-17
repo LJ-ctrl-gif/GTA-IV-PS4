@@ -189,7 +189,7 @@ mkdir -p "$LR_ROOT/host-tools/bin"
 if [ ! -x "$LR_ROOT/host-tools/bin/spirv-val" ] || [ ! -x "$LR_ROOT/host-tools/bin/glslangValidator" ]; then
     cmake -S "$LR_SCRIPTS/host-shader-tools" -B "$HST_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release \
         -DREXGLUE_THIRDPARTY="$LR_SRC/glue/rexglue-sdk-main/thirdparty" \
-        -DGLSLANG_SOURCE_DIR="$HOME/dolphinps4-build/src/dolphin/Externals/glslang/glslang" \
+        -DGLSLANG_SOURCE_DIR="$DOLPHIN_BUILD/src/dolphin/Externals/glslang/glslang" \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
         -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21 >/dev/null
     cmake --build "$HST_BUILD" --target spirv-val glslang-standalone
