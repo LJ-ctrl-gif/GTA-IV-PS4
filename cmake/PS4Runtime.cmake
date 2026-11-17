@@ -140,8 +140,8 @@ endfunction()
 # Built by DolphinPS4's scripts/build-mesa.sh. Whole archives, as Mesa's own
 # shared-library link does: the dispatch tables refer to entry points through
 # weak symbols, which don't pull archive members (they would silently be NULL).
-set(PS4_MESA_BUILD "$ENV{HOME}/dolphinps4-build/build/mesa" CACHE PATH
-    "Mesa RADV build directory for the PS4 (DolphinPS4 scripts/build-mesa.sh)")
+set(PS4_MESA_BUILD "$ENV{HOME}/libertyrecomp-ps4-build/mesa-build" CACHE PATH
+    "Mesa RADV build directory for the PS4 (ps4/scripts/build-mesa.sh)")
 function(ps4_link_mesa target)
     set(libs
         src/amd/vulkan/libvulkan_radeon.a src/amd/common/libamd_common.a
@@ -156,7 +156,7 @@ function(ps4_link_mesa target)
     foreach(lib IN LISTS libs)
         if(NOT EXISTS "${lib}")
             message(FATAL_ERROR "Mesa RADV library missing: ${lib}\n"
-                "Build it with DolphinPS4's scripts/build-mesa.sh or set PS4_MESA_BUILD.")
+                "Build it with ps4/scripts/build-mesa.sh or set PS4_MESA_BUILD.")
         endif()
     endforeach()
     target_link_libraries(${target} PRIVATE "-Wl,--whole-archive" ${libs} "-Wl,--no-whole-archive")
