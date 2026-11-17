@@ -239,7 +239,7 @@ if [ ! -f "$LR_ROOT/host-tools/dxc/lib/libdxcompiler.so" ]; then
     curl -sSLf -o "$LR_ROOT/host-tools/dxc/dxc.tar.gz" \
         "https://github.com/microsoft/DirectXShaderCompiler/releases/download/$DXC_VERSION/$DXC_ASSET"
     DXC_SHA256="96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1"
-    printf '%s  %s\\n' "$DXC_SHA256" "$LR_ROOT/host-tools/dxc/dxc.tar.gz" | sha256sum --check --status || {
+    printf '%s  %s\n' "$DXC_SHA256" "$LR_ROOT/host-tools/dxc/dxc.tar.gz" | sha256sum --check --status || {
         echo "ERROR: DXC archive SHA-256 verification failed; refusing extraction." >&2
         rm -f -- "$LR_ROOT/host-tools/dxc/dxc.tar.gz"
         exit 1
