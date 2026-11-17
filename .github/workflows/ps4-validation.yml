@@ -206,6 +206,13 @@ jobs:
           grep -Fq 'LR_ROOT/mesa-build' ps4/scripts/build-mesa.sh
           grep -Fq 'build-mesa.sh setup' ps4/DEPENDENCIES.md
 
+      - name: Verify Mesa static runtime link dependencies
+        run: |
+          set -euo pipefail
+          for library in libvulkan_instance.a libvulkan_runtime.a libvulkan_wsi.a; do
+            grep -Fq "$library" cmake/PS4Runtime.cmake
+            grep -Fq "$library" ps4/scripts/check-build-prerequisites.sh
+          done
       - name: Verify Mesa source provenance checks
         run: |
           set -euo pipefail
