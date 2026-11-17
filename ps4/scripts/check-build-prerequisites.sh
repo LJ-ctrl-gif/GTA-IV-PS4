@@ -51,6 +51,24 @@ need_file "$LR_ROOT/host-tools/bin/spirv-val"
 need_file "$LR_ROOT/host-tools/bin/glslangValidator"
 need_file "$LR_ROOT/host-tools/dxc/lib/libdxcompiler.so"
 
+# Verify the Mesa archive was built from the pinned, PS4-patched source tree.
+# A directory of matching library filenames alone is not enough: the GFX7 MUBUF
+# address-mode change is required to avoid the known PS4 GPU hang.
+MESA_SOURCE="$LR_ROOT/mesa-src"
+need_dir "$MESA_SOURCE"
+if [[ -f "$MESA_SOURCE/VERSION" ]]; then
+    mesa_version="$(tr -d '[:space:]' < "$MESA_SOURCE/VERSION")"
+    [[ "$mesa_version" == "26.0.8" ]] || fail "Mesa source version 26.0.8 (found $mesa_version)"
+else
+    fail "Mesa source version file $MESA_SOURCE/VERSION"
+fi
+mesa_aco="$MESA_SOURCE/src/amd/compiler/instruction_selection/aco_select_nir_intrinsics.cpp"
+if [[ -f "$mesa_aco" ]]; then
+    grep -Fq "mubuf_addr64_global" "$mesa_aco" || fail "PS4 MUBUF addr64 Mesa patch in $mesa_aco"
+else
+    fail "Mesa ACO source file $mesa_aco"
+fi
+
 MESA="$LR_ROOT/mesa-build"
 mesa_libraries=(
     src/amd/vulkan/libvulkan_radeon.a
