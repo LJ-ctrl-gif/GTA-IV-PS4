@@ -51,6 +51,12 @@ if [[ ! -d "$LR_PARENT_INPUT" ]]; then
     echo "ERROR: LR_ROOT parent must already exist: $LR_PARENT_INPUT" >&2
     exit 1
 fi
+# Check the caller-supplied final component before canonicalizing its parent;
+# resolving the parent first would otherwise hide a symlink at LR_ROOT itself.
+if [[ -L "$LR_ROOT_INPUT" ]]; then
+    echo "ERROR: LR_ROOT must not be a symbolic link: $LR_ROOT_INPUT" >&2
+    exit 1
+fi
 LR_PARENT="$(cd -- "$LR_PARENT_INPUT" && pwd -P)"
 LR_ROOT="$LR_PARENT/$LR_BASE"
 
