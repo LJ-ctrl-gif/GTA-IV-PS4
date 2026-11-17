@@ -26,6 +26,8 @@ LIB="$LR_SRC/LibertyRecompLib"
 [ -f "$OELF" ] || { echo "missing $OELF: refusing to package without the validated OELF" >&2; exit 1; }
 [[ ! -L "$LR_ROOT" ]] || { echo "LR_ROOT must not be a symlink: $LR_ROOT" >&2; exit 1; }
 [[ ! -L "$LR_ROOT/build" ]] || { echo "build directory must not be a symlink: $LR_ROOT/build" >&2; exit 1; }
+[[ ! -L "$LR_ROOT/out" ]] || { echo "output directory must not be a symlink: $LR_ROOT/out" >&2; exit 1; }
+[[ ! -L "$LR_ROOT/oelf" ]] || { echo "symbol directory must not be a symlink: $LR_ROOT/oelf" >&2; exit 1; }
 mkdir -p "$LR_ROOT/build"
 STAGE="$(mktemp -d "$LR_ROOT/build/pkg-stage.XXXXXX")"
 cleanup_stage() {
