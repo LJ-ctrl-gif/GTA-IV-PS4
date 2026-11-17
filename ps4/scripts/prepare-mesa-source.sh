@@ -8,6 +8,7 @@ source "$HERE/ps4-env.sh"
 
 DOLPHINPS4_COMMIT="888ff3e913801c0c2b2531ddf4f767772ed45dd9"
 MESA_TAG="mesa-26.0.8"
+MESA_COMMIT="60e95b787857afbc9a00b693b91c0d9c8923a430"
 DOLPHINPS4_REPO="${DOLPHINPS4_REPO:-$DOLPHIN_BUILD/DolphinPS4}"
 MESA_SOURCE="${MESA_SOURCE:-$LR_ROOT/mesa-src}"
 MESA_PATCH="$HERE/../patches/mesa-aco-mubuf-addr64.patch"
@@ -62,6 +63,11 @@ mesa_version="$(tr -d '[:space:]' < "$STAGE/mesa-src/VERSION")"
     echo "ERROR: expected Mesa 26.0.8, got $mesa_version" >&2
     exit 1
 }
+actual_mesa_commit="$(git -C "$STAGE/mesa-src" rev-parse HEAD)"
+[[ "$actual_mesa_commit" == "$MESA_COMMIT" ]] || {
+    echo "ERROR: Mesa 26.0.8 commit mismatch: $actual_mesa_commit" >&2
+    exit 1
+}
 
 echo "Applying DolphinPS4's PS4 RADV integration..."
 git -C "$STAGE/mesa-src" apply --check "$STAGE/DolphinPS4/patches/mesa-ps4.patch"
@@ -83,5 +89,5 @@ mv -- "$STAGE/mesa-src" "$MESA_SOURCE"
 
 echo "Mesa PS4 source prepared successfully."
 echo "  DolphinPS4: $DOLPHINPS4_REPO ($DOLPHINPS4_COMMIT)"
-echo "  Mesa:       $MESA_SOURCE (26.0.8 + PS4 integration + GTA IV ACO patch)"
+echo "  Mesa:       $MESA_SOURCE (26.0.8 $MESA_COMMIT + PS4 integration + GTA IV ACO patch)"
 echo "Next: build the DolphinPS4 sysroot and Mesa static libraries using its pinned scripts."
