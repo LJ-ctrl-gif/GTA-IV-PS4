@@ -63,6 +63,25 @@ The GTA IV-specific build outputs belong under `$LR_ROOT`:
   `port/mesa/ac_ps4_drm.c`; then apply `ps4/patches/mesa-aco-mubuf-addr64.patch`. The
   read-only prerequisite checker verifies the version and markers from both patch layers.
 
+## Prepare the Mesa source tree
+
+From the repository root on Linux x86_64, run:
+
+```bash
+bash ps4/scripts/prepare-mesa-source.sh
+```
+
+The script clones the exact DolphinPS4 integration commit and Mesa `mesa-26.0.8` tag into
+temporary staging directories, verifies the DolphinPS4 revision and Mesa version, applies
+DolphinPS4's `patches/mesa-ps4.patch`, copies its PS4 GNM winsys source, then applies the
+GTA IV MUBUF addr64 patch. It publishes the two source directories only after all markers pass.
+It refuses to overwrite existing targets; move or back up existing source directories yourself
+before rerunning. It fetches source code only and never downloads game files.
+
+The default DolphinPS4 checkout is `$DOLPHIN_BUILD/DolphinPS4`; override it with
+`DOLPHINPS4_REPO`. The prepared Mesa source defaults to `$LR_ROOT/mesa-src`; override it with
+`MESA_SOURCE`.
+
 ## Validation and build order
 
 Run from the repository root in the Linux build environment:
