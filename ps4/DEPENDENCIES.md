@@ -17,13 +17,14 @@ agree with one another.
 |---|---|
 | DolphinPS4 integration scripts and port | `iHaiDeeZ/DolphinPS4` commit `888ff3e913801c0c2b2531ddf4f767772ed45dd9` |
 | Dolphin source used by that integration | `dolphin-emu/dolphin` commit `771fb154059c5812d6a715a23226249cc42877a2` |
-| Mesa source | Mesa `26.0.8` |
-| PS4-specific Mesa change in this repository | `ps4/patches/mesa-aco-mubuf-addr64.patch` |
+| Mesa source | Mesa `26.0.8`, with the pinned DolphinPS4 `patches/mesa-ps4.patch` integration |
+| GTA IV PS4 Mesa adjustment | `ps4/patches/mesa-aco-mubuf-addr64.patch` |
 | DXC host library | Microsoft DirectXShaderCompiler `v1.9.2609`, asset `linux_dxc_2026_09_28.x86_x64.tar.gz` |
-
-The DXC Linux archive is verified before extraction against the official GitHub release asset digest:
-`sha256:96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1`.
 | LLVM host tools | Clang/LLD/LLVM 21 |
+
+The DXC Linux archive is verified before extraction against the official immutable GitHub release
+asset digest: `sha256:96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1`.
+CI downloads the same official asset and checks that digest.
 
 The DolphinPS4 build guide is the source for the host prerequisites, Dolphin base revision,
 Mesa version and sysroot layout:
