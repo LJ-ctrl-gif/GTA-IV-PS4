@@ -147,6 +147,8 @@ function(ps4_link_mesa target)
         src/amd/vulkan/libvulkan_radeon.a src/amd/common/libamd_common.a
         src/amd/compiler/libaco.a src/amd/addrlib/libaddrlib.a src/vulkan/util/libvulkan_util.a
         src/compiler/spirv/libvtn.a src/compiler/nir/libnir.a src/compiler/libcompiler.a
+        src/vulkan/runtime/libvulkan_instance.a src/vulkan/runtime/libvulkan_runtime.a
+        src/vulkan/wsi/libvulkan_wsi.a
         src/util/libxmlconfig.a src/util/libmesa_util.a src/util/libmesa_util_simd.a
         src/util/libmesa_util_clflush.a src/util/libmesa_util_clflushopt.a src/util/libparson.a
         src/util/blake3/libblake3.a src/c11/impl/libmesa_util_c11.a)
