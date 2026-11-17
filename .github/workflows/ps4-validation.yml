@@ -118,7 +118,7 @@ jobs:
       - name: Verify required PS4 build scripts
         run: |
           set -euo pipefail
-          for script in ps4-env.sh setup-toolchain.sh build-ps4.sh package-ps4.sh make-pkg.sh; do
+          for script in ps4-env.sh setup-toolchain.sh check-build-prerequisites.sh build-ps4.sh package-ps4.sh make-pkg.sh; do
             test -s "ps4/scripts/$script"
             echo "Found: $script"
           done
