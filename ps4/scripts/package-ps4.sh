@@ -17,13 +17,26 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HERE/ps4-env.sh"
 
 VERSION="${1:?usage: package-ps4.sh <version XX.YY>}"
+[[ "$VERSION" =~ ^[0-9]{2}\.[0-9]{2}$ ]] || { echo "version must look like 01.00" >&2; exit 1; }
 BUILD_DIR="$LR_SRC/out/build/ps4-release"
 EBOOT="$BUILD_DIR/LibertyRecomp/eboot.bin"
+OELF="$BUILD_DIR/LibertyRecomp/LibertyRecomp.oelf"
 LIB="$LR_SRC/LibertyRecompLib"
 [ -f "$EBOOT" ] || { echo "missing $EBOOT: run build-ps4.sh first" >&2; exit 1; }
-
-STAGE="$LR_ROOT/build/pkg-stage"
-rm -rf "$STAGE"
+[ -f "$OELF" ] || { echo "missing $OELF: refusing to package without the validated OELF" >&2; exit 1; }
+[[ ! -L "$LR_ROOT" ]] || { echo "LR_ROOT must not be a symlink: $LR_ROOT" >&2; exit 1; }
+[[ ! -L "$LR_ROOT/build" ]] || { echo "build directory must not be a symlink: $LR_ROOT/build" >&2; exit 1; }
+mkdir -p "$LR_ROOT/build"
+STAGE="$(mktemp -d "$LR_ROOT/build/pkg-stage.XXXXXX")"
+cleanup_stage() {
+    case "${STAGE:-}" in
+        "$LR_ROOT"/build/pkg-stage.*)
+            [[ ! -d "$STAGE" ]] || rm -rf -- "$STAGE"
+            ;;
+        *) echo "WARNING: refusing to remove unexpected package stage: $STAGE" >&2 ;;
+    esac
+}
+trap cleanup_stage EXIT
 mkdir -p "$STAGE/sce_sys" "$STAGE/Resources"
 
 cp "$EBOOT" "$STAGE/eboot.bin"
@@ -51,6 +64,6 @@ PKG="$("$HERE/make-pkg.sh" "$STAGE" LBTY00001 "Liberty Recompiled" "$VERSION" LI
 
 # Keep the symbols of every packaged build for symbolizing console crash logs.
 mkdir -p "$LR_ROOT/oelf"
-cp "$BUILD_DIR/LibertyRecomp/LibertyRecomp.oelf" "$LR_ROOT/oelf/v$VERSION.oelf"
+mkdir -p "$LR_ROOT/oelf"\ncp "$OELF" "$LR_ROOT/oelf/v$VERSION.oelf"
 
 ls -la "$PKG"
