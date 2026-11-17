@@ -52,7 +52,7 @@ jobs:
           curl --fail --location --silent --show-error --retry 3 \
             "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2609/linux_dxc_2026_09_28.x86_x64.tar.gz" \
             --output "$archive"
-          printf '%s  %s\\n' \
+          printf '%s  %s\n' \
             "96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1" "$archive" \
             | sha256sum --check --status
 
