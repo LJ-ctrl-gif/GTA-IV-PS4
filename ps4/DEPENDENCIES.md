@@ -82,6 +82,21 @@ The default DolphinPS4 checkout is `$DOLPHIN_BUILD/DolphinPS4`; override it with
 `DOLPHINPS4_REPO`. The prepared Mesa source defaults to `$LR_ROOT/mesa-src`; override it with
 `MESA_SOURCE`.
 
+## Build the Mesa RADV libraries
+
+After the DolphinPS4 PS4 sysroot and `$DOLPHIN_BUILD/src/libdrm` headers are ready, install
+Meson, Mako and PyYAML in `$DOLPHIN_BUILD/mesa-venv` and ensure Ninja is available on the host.
+Run `setup-toolchain.sh` first so the GTA IV host shader tools are available, then run:
+
+```bash
+bash ps4/scripts/build-mesa.sh setup
+```
+
+The wrapper uses the pinned DolphinPS4 `scripts/build-mesa.sh`, links the prepared source into
+the upstream expected layout without copying or modifying an existing source checkout, and
+exposes its output at `$LR_ROOT/mesa-build` for the GTA IV CMake preset. The `setup` argument
+reconfigures the Mesa build directory; omit it for an incremental build.
+
 ## Validation and build order
 
 Run from the repository root in the Linux build environment:
