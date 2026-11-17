@@ -158,6 +158,14 @@ jobs:
           fi
           grep -Fq "Aborting before toolchain staging or downloads" "$test_root/setup.log"
           test ! -e "$test_root/home/setup-root/.toolchain-stage"
+      - name: Verify Mesa source provenance checks
+        run: |
+          set -euo pipefail
+          grep -Fq "is_ps4 = cc.get_define('__ORBIS__') != ''" ps4/scripts/check-build-prerequisites.sh
+          grep -Fq "ac_ps4_drm.c" ps4/scripts/check-build-prerequisites.sh
+          grep -Fq 'mubuf_addr64_global' ps4/scripts/check-build-prerequisites.sh
+          grep -Fq 'patches/mesa-ps4.patch' ps4/DEPENDENCIES.md
+          grep -Fq 'mesa-aco-mubuf-addr64.patch' ps4/DEPENDENCIES.md
       - name: Verify required PS4 build scripts
         run: |
           set -euo pipefail
