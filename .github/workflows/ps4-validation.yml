@@ -192,6 +192,16 @@ jobs:
           bash ps4/scripts/prepare-mesa-source.sh
           echo "The preparation script validated both immutable source commits and all PS4 patch markers."
 
+      - name: Check pinned Mesa build wrapper
+        run: |
+          set -euo pipefail
+          bash -n ps4/scripts/build-mesa.sh
+          grep -Fq '888ff3e913801c0c2b2531ddf4f767772ed45dd9' ps4/scripts/build-mesa.sh
+          grep -Fq '60e95b787857afbc9a00b693b91c0d9c8923a430' ps4/scripts/build-mesa.sh
+          grep -Fq 'scripts/build-mesa.sh' ps4/scripts/build-mesa.sh
+          grep -Fq 'LR_ROOT/mesa-build' ps4/scripts/build-mesa.sh
+          grep -Fq 'build-mesa.sh setup' ps4/DEPENDENCIES.md
+
       - name: Verify Mesa source provenance checks
         run: |
           set -euo pipefail
@@ -203,7 +213,7 @@ jobs:
       - name: Verify required PS4 build scripts
         run: |
           set -euo pipefail
-          for script in ps4-env.sh setup-toolchain.sh prepare-mesa-source.sh check-build-prerequisites.sh build-ps4.sh package-ps4.sh make-pkg.sh; do
+          for script in ps4-env.sh setup-toolchain.sh prepare-mesa-source.sh build-mesa.sh check-build-prerequisites.sh build-ps4.sh package-ps4.sh make-pkg.sh; do
             test -s "ps4/scripts/$script"
             echo "Found: $script"
           done
