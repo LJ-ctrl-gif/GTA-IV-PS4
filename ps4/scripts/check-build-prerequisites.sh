@@ -99,6 +99,9 @@ mesa_libraries=(
     src/compiler/spirv/libvtn.a
     src/compiler/nir/libnir.a
     src/compiler/libcompiler.a
+    src/vulkan/runtime/libvulkan_instance.a
+    src/vulkan/runtime/libvulkan_runtime.a
+    src/vulkan/wsi/libvulkan_wsi.a
     src/util/libxmlconfig.a
     src/util/libmesa_util.a
     src/util/libmesa_util_simd.a
