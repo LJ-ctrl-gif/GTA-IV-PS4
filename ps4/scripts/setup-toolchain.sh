@@ -129,6 +129,36 @@ export LR_ROOT
 HOST_PATH="$PATH"
 source "$SCRIPT_DIR/ps4-env.sh"
 
+# Fail before creating staging directories or downloading DXC when upstream inputs are absent.
+missing=0
+for tool in cmake ninja curl tar clang-21 clang++-21 llvm-ar-21; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "ERROR: required host tool is missing: $tool" >&2
+        missing=1
+    fi
+done
+for path in \
+    "$OPENORBIS/bin/ld.lld" \
+    "$OPENORBIS/link.x" \
+    "$OPENORBIS/lib/crt1.o" \
+    "$DOLPHIN_SYSROOT/include/c++/v1/__config_site" \
+    "$DOLPHIN_SYSROOT/lib/libc++.a" \
+    "$DOLPHIN_SYSROOT/lib/libc++abi.a" \
+    "$DOLPHIN_SYSROOT/libc-overlay" \
+    "$DOLPHIN_BUILD/src/dolphin/Externals/glslang/glslang" \
+    "$LR_SRC/tools/OpenOrbis-PS4-Toolchain/scripts" \
+    "$LR_SRC/glue/rexglue-sdk-main/thirdparty" \
+    "$LR_SCRIPTS/host-shader-tools"; do
+    if [[ ! -e "$path" ]]; then
+        echo "ERROR: required PS4 build input is missing: $path" >&2
+        missing=1
+    fi
+done
+if [[ "$missing" -ne 0 ]]; then
+    echo "Aborting before toolchain staging or downloads. See ps4/DEPENDENCIES.md." >&2
+    exit 1
+fi
+
 REPO_OO="$LR_SRC/tools/OpenOrbis-PS4-Toolchain"
 STAGE_ROOT="$(mktemp -d "$LR_ROOT/.toolchain-stage.XXXXXX")"
 cleanup_stage() {
