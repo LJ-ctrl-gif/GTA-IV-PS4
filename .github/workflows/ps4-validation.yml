@@ -210,8 +210,6 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq 'libertyrecomp-ps4-build/mesa-build' cmake/PS4Runtime.cmake
-        run: |
-          set -euo pipefail
           for library in libvulkan_instance.a libvulkan_runtime.a libvulkan_wsi.a; do
             grep -Fq "$library" cmake/PS4Runtime.cmake
             grep -Fq "$library" ps4/scripts/check-build-prerequisites.sh
