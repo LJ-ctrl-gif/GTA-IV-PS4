@@ -5,6 +5,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/ps4-env.sh"
 step="${1:-all}"; shift || true
 cd "$LR_SRC"
+bash "$LR_SCRIPTS/check-build-prerequisites.sh" || exit $?
 LOGS="$LR_ROOT/logs"; mkdir -p "$LOGS"
 BUILD_DIR="$LR_SRC/out/build/ps4-release"
 
