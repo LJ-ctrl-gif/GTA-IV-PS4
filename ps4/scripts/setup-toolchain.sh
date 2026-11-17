@@ -1,21 +1,104 @@
 #!/bin/bash
 # Builds the overlay toolchain ($OO_PS4_TOOLCHAIN) and fake LLVM prefix used by the PS4 build,
-# and stages the extracted game files. Safe to re-run.
+# and stages the extracted game files. Existing toolchain directories are preserved as backups.
 set -euo pipefail
-source "$(dirname "${BASH_SOURCE[0]}")/ps4-env.sh"
 
-OO="$OO_PS4_TOOLCHAIN"
+# The pinned Microsoft DXC release used below only provides a Linux x86_64 asset.
+# Reject unsupported hosts before sourcing the environment or touching build paths.
+HOST_OS="$(uname -s)"
+HOST_ARCH="$(uname -m)"
+if [[ "$HOST_OS" != "Linux" || "$HOST_ARCH" != "x86_64" ]]; then
+    echo "ERROR: PS4 toolchain setup requires x86_64 Linux (detected: $HOST_OS/$HOST_ARCH)." >&2
+    echo "Aborting before modifying build files." >&2
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
+LR_ROOT="${LR_ROOT:-${HOME:?HOME must be set}/libertyrecomp-ps4-build}"
+
+# Keep all generated output in a dedicated directory below HOME. This prevents a bad LR_ROOT
+# override (/, HOME itself, the repository, or an ancestor of either) from making cleanup unsafe.
+if [[ -L "$LR_ROOT" ]]; then
+    echo "ERROR: LR_ROOT must not be a symbolic link: $LR_ROOT" >&2
+    exit 1
+fi
+mkdir -p -- "$LR_ROOT"
+LR_ROOT="$(cd -- "$LR_ROOT" && pwd -P)"
+HOME_REAL="$(cd -- "${HOME:?HOME must be set}" && pwd -P)"
+
+if [[ "$LR_ROOT" == "$HOME_REAL" ]]; then
+    echo "ERROR: LR_ROOT must be a dedicated directory below HOME, not HOME itself." >&2
+    exit 1
+fi
+case "$LR_ROOT/" in
+    "$HOME_REAL/"*) ;;
+    *)
+        echo "ERROR: LR_ROOT must be located below HOME: $LR_ROOT" >&2
+        exit 1
+        ;;
+esac
+case "$LR_ROOT/" in
+    "$REPO_ROOT/"*)
+        echo "ERROR: LR_ROOT must not be inside the GTA IV repository: $LR_ROOT" >&2
+        exit 1
+        ;;
+esac
+case "$REPO_ROOT/" in
+    "$LR_ROOT/"*)
+        echo "ERROR: LR_ROOT must not contain the GTA IV repository: $LR_ROOT" >&2
+        exit 1
+        ;;
+esac
+
+# Refuse symlink or non-directory output targets. Existing directories are moved aside only
+# after the replacement toolchain has been built successfully.
+for target in "$LR_ROOT/oo" "$LR_ROOT/llvm"; do
+    if [[ -L "$target" ]]; then
+        echo "ERROR: refusing to replace symlinked toolchain path: $target" >&2
+        exit 1
+    fi
+    if [[ -e "$target" && ! -d "$target" ]]; then
+        echo "ERROR: toolchain path exists but is not a directory: $target" >&2
+        exit 1
+    fi
+done
+
+export LR_ROOT
+HOST_PATH="$PATH"
+source "$SCRIPT_DIR/ps4-env.sh"
+
 REPO_OO="$LR_SRC/tools/OpenOrbis-PS4-Toolchain"
-rm -rf "$OO" "$LR_ROOT/llvm"
-mkdir -p "$OO/lib" "$OO/include" "$OO/bin" "$LR_ROOT/llvm/bin" "$LR_ROOT/llvm/include"
+STAGE_ROOT="$(mktemp -d "$LR_ROOT/.toolchain-stage.XXXXXX")"
+cleanup_stage() {
+    if [[ -n "${STAGE_ROOT:-}" && -d "$STAGE_ROOT" ]]; then
+        case "$STAGE_ROOT" in
+            "$LR_ROOT"/.toolchain-stage.*) rm -rf -- "$STAGE_ROOT" ;;
+            *) echo "WARNING: refusing to remove unexpected staging path: $STAGE_ROOT" >&2 ;;
+        esac
+    fi
+}
+trap cleanup_stage EXIT
+
+OO="$STAGE_ROOT/oo"
+LLVM="$STAGE_ROOT/llvm"
+mkdir -p "$OO/lib" "$OO/include" "$OO/bin" "$LLVM/bin" "$LLVM/include"
 
 # --- Overlay toolchain: PacBrew OpenOrbis + repo scripts + DolphinPS4 libc++ ---
 for f in "$OPENORBIS"/*; do
+    [[ -e "$f" ]] || continue
     case "$(basename "$f")" in lib|include|bin) ;; *) ln -s "$f" "$OO/" ;; esac
 done
-for f in "$OPENORBIS"/lib/*;     do ln -s "$f" "$OO/lib/"; done
-for f in "$OPENORBIS"/bin/*;     do ln -s "$f" "$OO/bin/"; done
+for f in "$OPENORBIS"/lib/*; do
+    [[ -e "$f" ]] || continue
+    ln -s "$f" "$OO/lib/"
+done
+for f in "$OPENORBIS"/bin/*; do
+    [[ -e "$f" ]] || continue
+    ln -s "$f" "$OO/bin/"
+done
 for f in "$OPENORBIS"/include/*; do
+    [[ -e "$f" ]] || continue
     [ "$(basename "$f")" = "c++" ] || ln -s "$f" "$OO/include/"
 done
 # PS4 __config_site overlay dir the toolchain puts first on the C++ include path.
@@ -24,8 +107,9 @@ cp "$DOLPHIN_SYSROOT/include/c++/v1/__config_site" "$OO/include/c++/v1/__config_
 # Python helpers referenced by LibertyRecomp's CMake (make_fself.py etc.) live in the repo copy.
 ln -s "$REPO_OO/scripts" "$OO/scripts"
 # libcxx_ps4_compat.a = LLVM 21 libc++ + libc++abi compiled for PS4 (from DolphinPS4).
+mkdir -p "$STAGE_ROOT/ar-work"
 (
-    cd "$(mktemp -d)"
+    cd "$STAGE_ROOT/ar-work"
     printf 'CREATE %s\nADDLIB %s\nADDLIB %s\nSAVE\nEND\n' \
         "$OO/lib/libcxx_ps4_compat.a" "$DOLPHIN_SYSROOT/lib/libc++.a" "$DOLPHIN_SYSROOT/lib/libc++abi.a" \
         | llvm-ar-21 -M
@@ -33,10 +117,10 @@ ln -s "$REPO_OO/scripts" "$OO/scripts"
 
 # --- Fake LLVM prefix: host clang 21 + DolphinPS4 libc++ headers ---
 for t in clang clang++ ld.lld lld llvm-ar llvm-ranlib llvm-nm llvm-objcopy llvm-strip; do
-    real="$(command -v "$t-21" || command -v "$t")"
-    ln -s "$real" "$LR_ROOT/llvm/bin/$t"
+    real="$(PATH="$HOST_PATH" command -v "$t-21" || PATH="$HOST_PATH" command -v "$t")"
+    ln -s "$real" "$LLVM/bin/$t"
 done
-ln -s "$DOLPHIN_SYSROOT/include/c++" "$LR_ROOT/llvm/include/c++"
+ln -s "$DOLPHIN_SYSROOT/include/c++" "$LLVM/include/c++"
 
 # --- Host shader tools: spirv-val + glslangValidator (with optimizer) from the SDK's submodules ---
 HST_BUILD="$LR_ROOT/build/host-shader-tools"
@@ -73,7 +157,54 @@ if [ -d "$LR_PAYLOAD/\$SystemUpdate" ]; then
     mv "$LR_PAYLOAD/\$SystemUpdate" "$LR_ROOT/game/SystemUpdate"
 fi
 
-echo "OO_PS4_TOOLCHAIN=$OO"
-ls -la "$OO/lib/libcxx_ps4_compat.a"
-clang --version | head -1
+# Install the completed toolchain atomically. Previous directories are retained as timestamped
+# backups rather than recursively deleted, so a failed rebuild cannot destroy the last working copy.
+BACKUP_SUFFIX="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+OO_BACKUP="$LR_ROOT/oo.backup.$BACKUP_SUFFIX"
+LLVM_BACKUP="$LR_ROOT/llvm.backup.$BACKUP_SUFFIX"
+backup_existing() {
+    local target="$1"
+    local backup="$2"
+    if [[ -e "$target" ]]; then
+        if [[ -L "$target" || ! -d "$target" ]]; then
+            echo "ERROR: refusing to move unexpected toolchain target: $target" >&2
+            return 1
+        fi
+        if [[ -e "$backup" || -L "$backup" ]]; then
+            echo "ERROR: backup path already exists: $backup" >&2
+            return 1
+        fi
+        mv -- "$target" "$backup"
+    fi
+}
+restore_backups() {
+    if [[ -n "$OO_BACKUP" && -d "$OO_BACKUP" && ! -e "$LR_ROOT/oo" ]]; then
+        mv -- "$OO_BACKUP" "$LR_ROOT/oo"
+    fi
+    if [[ -n "$LLVM_BACKUP" && -d "$LLVM_BACKUP" && ! -e "$LR_ROOT/llvm" ]]; then
+        mv -- "$LLVM_BACKUP" "$LR_ROOT/llvm"
+    fi
+}
+
+if ! backup_existing "$LR_ROOT/oo" "$OO_BACKUP"; then
+    restore_backups
+    exit 1
+fi
+if ! backup_existing "$LR_ROOT/llvm" "$LLVM_BACKUP"; then
+    restore_backups
+    exit 1
+fi
+if ! mv -- "$OO" "$LR_ROOT/oo"; then
+    restore_backups
+    exit 1
+fi
+if ! mv -- "$LLVM" "$LR_ROOT/llvm"; then
+    mv -- "$LR_ROOT/oo" "$OO" || true
+    restore_backups
+    exit 1
+fi
+
+echo "OO_PS4_TOOLCHAIN=$LR_ROOT/oo"
+ls -la "$LR_ROOT/oo/lib/libcxx_ps4_compat.a"
+"$LR_ROOT/llvm/bin/clang" --version | head -1
 ls "$LR_PAYLOAD"
