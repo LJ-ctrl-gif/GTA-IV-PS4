@@ -57,6 +57,8 @@ The GTA IV-specific build outputs belong under `$LR_ROOT`:
 - `host-tools/bin/spirv-val` and `glslangValidator`
 - `host-tools/dxc/lib/libdxcompiler.so`
 - `mesa-build/`: static RADV libraries consumed by `cmake/PS4Runtime.cmake`
+  including `libvulkan_instance.a`, `libvulkan_runtime.a` and `libvulkan_wsi.a`, which
+  are separate static dependencies of the PS4-linked RADV archive.
 - `mesa-src/`: Mesa 26.0.8 source worktree used to produce `mesa-build/`. It must first
   contain the pinned DolphinPS4 integration from `patches/mesa-ps4.patch` (including the PS4
   Meson/RADV changes), plus `src/amd/common/ac_ps4_drm.c` copied from DolphinPS4's
