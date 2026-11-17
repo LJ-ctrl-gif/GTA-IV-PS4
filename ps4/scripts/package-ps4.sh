@@ -64,6 +64,6 @@ PKG="$("$HERE/make-pkg.sh" "$STAGE" LBTY00001 "Liberty Recompiled" "$VERSION" LI
 
 # Keep the symbols of every packaged build for symbolizing console crash logs.
 mkdir -p "$LR_ROOT/oelf"
-mkdir -p "$LR_ROOT/oelf"\ncp "$OELF" "$LR_ROOT/oelf/v$VERSION.oelf"
+cp "$OELF" "$LR_ROOT/oelf/v$VERSION.oelf"
 
 ls -la "$PKG"
