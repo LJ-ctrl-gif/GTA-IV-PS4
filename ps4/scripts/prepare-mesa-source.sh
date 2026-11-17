@@ -69,8 +69,8 @@ git -C "$STAGE/mesa-src" apply "$STAGE/DolphinPS4/patches/mesa-ps4.patch"
 tr -d '\r' < "$STAGE/DolphinPS4/port/mesa/ac_ps4_drm.c" > "$STAGE/mesa-src/src/amd/common/ac_ps4_drm.c"
 
 echo "Applying GTA IV's GFX7 MUBUF addr64 workaround..."
-git -C "$STAGE/mesa-src" apply --check "$MESA_PATCH"
-git -C "$STAGE/mesa-src" apply "$MESA_PATCH"
+git -C "$STAGE/mesa-src" apply --check -p3 "$MESA_PATCH"
+git -C "$STAGE/mesa-src" apply -p3 "$MESA_PATCH"
 
 grep -Fq "is_ps4 = cc.get_define('__ORBIS__') != ''" "$STAGE/mesa-src/meson.build"
 grep -Fq "mubuf_addr64_global" "$STAGE/mesa-src/src/amd/compiler/instruction_selection/aco_select_nir_intrinsics.cpp"
