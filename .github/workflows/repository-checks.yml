@@ -64,7 +64,7 @@ jobs:
             autoconf automake libtool libgtk-3-dev libx11-dev libxrandr-dev libxcursor-dev \
             libxi-dev libxinerama-dev libxext-dev libxkbcommon-dev libwayland-dev \
             wayland-protocols libdecor-0-dev libasound2-dev libpulse-dev libdbus-1-dev \
-            libusb-1.0-0-dev libssl-dev libvulkan-dev nasm
+            libusb-1.0-0-dev libssl-dev libvulkan-dev libxss-dev nasm
           echo /usr/lib/llvm-18/bin >> "$GITHUB_PATH"
       - name: Install macOS prerequisites
         if: runner.os == 'macOS'
@@ -103,6 +103,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Mark checkout as safe for container Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Initialize and validate all dependency sources
         run: |
           python tools/setup_repo.py
