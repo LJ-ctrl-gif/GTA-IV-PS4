@@ -45,6 +45,7 @@ Defaults can be overridden with environment variables:
 Required inputs include:
 
 - `$DOLPHIN_BUILD/src/dolphin/Externals/glslang/glslang`
+- `$DOLPHIN_BUILD/src/libdrm/include/drm/` (headers used by the PS4 Mesa build)
 - `$DOLPHIN_SYSROOT/include/c++/v1/__config_site`
 - `$DOLPHIN_SYSROOT/lib/libc++.a` and `libc++abi.a`
 - `$DOLPHIN_SYSROOT/libc-overlay/`
@@ -56,9 +57,11 @@ The GTA IV-specific build outputs belong under `$LR_ROOT`:
 - `host-tools/bin/spirv-val` and `glslangValidator`
 - `host-tools/dxc/lib/libdxcompiler.so`
 - `mesa-build/`: static RADV libraries consumed by `cmake/PS4Runtime.cmake`
-- `mesa-src/`: Mesa 26.0.8 source worktree used to produce `mesa-build/`, with the PS4
-  MUBUF addr64 change from `ps4/patches/mesa-aco-mubuf-addr64.patch` applied. The read-only
-  prerequisite checker verifies the source version and required ACO patch marker.
+- `mesa-src/`: Mesa 26.0.8 source worktree used to produce `mesa-build/`. It must first
+  contain the pinned DolphinPS4 integration from `patches/mesa-ps4.patch` (including the PS4
+  Meson/RADV changes), plus `src/amd/common/ac_ps4_drm.c` copied from DolphinPS4's
+  `port/mesa/ac_ps4_drm.c`; then apply `ps4/patches/mesa-aco-mubuf-addr64.patch`. The
+  read-only prerequisite checker verifies the version and markers from both patch layers.
 
 ## Validation and build order
 
