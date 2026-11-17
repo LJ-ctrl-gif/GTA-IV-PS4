@@ -167,7 +167,7 @@ jobs:
           grep -Fq '60e95b787857afbc9a00b693b91c0d9c8923a430' ps4/scripts/prepare-mesa-source.sh
           grep -Fq '60e95b787857afbc9a00b693b91c0d9c8923a430' ps4/DEPENDENCIES.md
           grep -Fq 'git -C "$STAGE/mesa-src" apply --check' ps4/scripts/prepare-mesa-source.sh
-          grep -Fq 'git -C "$STAGE/mesa-src" apply -p4 "$MESA_PATCH"' ps4/scripts/prepare-mesa-source.sh
+          grep -Fq 'git -C "$STAGE/mesa-src" apply -p3 "$MESA_PATCH"' ps4/scripts/prepare-mesa-source.sh
           grep -Fq 'refuses to overwrite existing targets' ps4/DEPENDENCIES.md
       - name: Check package staging safety
         run: |
