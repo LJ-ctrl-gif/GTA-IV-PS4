@@ -52,6 +52,9 @@ The GTA IV-specific build outputs belong under `$LR_ROOT`:
 - `host-tools/bin/spirv-val` and `glslangValidator`
 - `host-tools/dxc/lib/libdxcompiler.so`
 - `mesa-build/`: static RADV libraries consumed by `cmake/PS4Runtime.cmake`
+- `mesa-src/`: Mesa 26.0.8 source worktree used to produce `mesa-build/`, with the PS4
+  MUBUF addr64 change from `ps4/patches/mesa-aco-mubuf-addr64.patch` applied. The read-only
+  prerequisite checker verifies the source version and required ACO patch marker.
 
 ## Validation and build order
 
