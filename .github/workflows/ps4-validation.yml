@@ -115,6 +115,32 @@ jobs:
             exit 1
           fi
           grep -Fq "LR_ROOT exists but is not a directory" "$test_root/root-file.log"
+      - name: Verify build preflight fails safely when dependencies are absent
+        run: |
+          set -euo pipefail
+          test_root="$(mktemp -d)"
+          trap 'rm -rf -- "$test_root"' EXIT
+          mkdir -p "$test_root/home"
+
+          # The read-only checker must report missing dependencies without creating LR_ROOT.
+          if HOME="$test_root/home" LR_ROOT="$test_root/home/check-root" \
+             DOLPHIN_BUILD="$test_root/dolphin" OPENORBIS="$test_root/openorbis" \
+             bash ps4/scripts/check-build-prerequisites.sh >"$test_root/check.log" 2>&1; then
+            echo "Expected prerequisite checker to reject the empty fixture." >&2
+            exit 1
+          fi
+          grep -Fq "PS4 build preflight failed" "$test_root/check.log"
+          test ! -e "$test_root/home/check-root"
+
+          # Setup must detect missing upstream inputs before creating a staging directory or downloading DXC.
+          if HOME="$test_root/home" LR_ROOT="$test_root/home/setup-root" \
+             DOLPHIN_BUILD="$test_root/dolphin" OPENORBIS="$test_root/openorbis" \
+             bash ps4/scripts/setup-toolchain.sh >"$test_root/setup.log" 2>&1; then
+            echo "Expected toolchain setup to reject the empty fixture." >&2
+            exit 1
+          fi
+          grep -Fq "Aborting before toolchain staging or downloads" "$test_root/setup.log"
+          test ! -e "$test_root/home/setup-root/.toolchain-stage"
       - name: Verify required PS4 build scripts
         run: |
           set -euo pipefail
