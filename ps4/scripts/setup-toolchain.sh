@@ -131,7 +131,7 @@ source "$SCRIPT_DIR/ps4-env.sh"
 
 # Fail before creating staging directories or downloading DXC when upstream inputs are absent.
 missing=0
-for tool in cmake ninja curl tar clang-21 clang++-21 ld.lld-21 lld-21 llvm-ar-21 llvm-ranlib-21 llvm-nm-21 llvm-objcopy-21 llvm-strip-21; do
+for tool in cmake ninja curl tar sha256sum clang-21 clang++-21 ld.lld-21 lld-21 llvm-ar-21 llvm-ranlib-21 llvm-nm-21 llvm-objcopy-21 llvm-strip-21; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "ERROR: required host tool is missing: $tool" >&2
         missing=1
@@ -238,6 +238,12 @@ if [ ! -f "$LR_ROOT/host-tools/dxc/lib/libdxcompiler.so" ]; then
     mkdir -p "$LR_ROOT/host-tools/dxc"
     curl -sSLf -o "$LR_ROOT/host-tools/dxc/dxc.tar.gz" \
         "https://github.com/microsoft/DirectXShaderCompiler/releases/download/$DXC_VERSION/$DXC_ASSET"
+    DXC_SHA256="96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1"
+    printf '%s  %s\\n' "$DXC_SHA256" "$LR_ROOT/host-tools/dxc/dxc.tar.gz" | sha256sum --check --status || {
+        echo "ERROR: DXC archive SHA-256 verification failed; refusing extraction." >&2
+        rm -f -- "$LR_ROOT/host-tools/dxc/dxc.tar.gz"
+        exit 1
+    }
     tar xzf "$LR_ROOT/host-tools/dxc/dxc.tar.gz" -C "$LR_ROOT/host-tools/dxc"
     rm "$LR_ROOT/host-tools/dxc/dxc.tar.gz"
 fi
