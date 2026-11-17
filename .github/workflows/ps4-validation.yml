@@ -173,6 +173,8 @@ jobs:
           bash -n ps4/scripts/package-ps4.sh
           grep -Fq 'mktemp -d "$LR_ROOT/build/pkg-stage.XXXXXX"' ps4/scripts/package-ps4.sh
           grep -Fq 'refusing to package without the validated OELF' ps4/scripts/package-ps4.sh
+          grep -Fq 'output directory must not be a symlink' ps4/scripts/package-ps4.sh
+          grep -Fq 'symbol directory must not be a symlink' ps4/scripts/package-ps4.sh
           if grep -Fq 'rm -rf "$STAGE"' ps4/scripts/package-ps4.sh; then
             echo "Unsafe fixed package staging deletion remains." >&2
             exit 1
