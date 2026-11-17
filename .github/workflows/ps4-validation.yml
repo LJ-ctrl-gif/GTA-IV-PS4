@@ -39,6 +39,12 @@ jobs:
             bash -n "$script"
             echo "Syntax OK: $script"
           done
+      - name: Verify pinned DXC archive integrity guard
+        run: |
+          set -euo pipefail
+          grep -Fq 'DXC_SHA256="96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1"' ps4/scripts/setup-toolchain.sh
+          grep -Fq 'sha256sum --check --status' ps4/scripts/setup-toolchain.sh
+          grep -Fq 'sha256:96faadc7f5c282d2ffda49804beb4c3ee38127bc252b723234e3c5cdf7aa39a1' ps4/DEPENDENCIES.md
       - name: Test toolchain setup path validation
         run: |
           set -euo pipefail
