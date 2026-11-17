@@ -15,18 +15,41 @@ fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
-LR_ROOT="${LR_ROOT:-${HOME:?HOME must be set}/libertyrecomp-ps4-build}"
+HOME_INPUT="${HOME:?HOME must be set}"
+if [[ ! -d "$HOME_INPUT" ]]; then
+    echo "ERROR: HOME must already exist and be a directory: $HOME_INPUT" >&2
+    exit 1
+fi
+HOME_REAL="$(cd -- "$HOME_INPUT" && pwd -P)"
+LR_ROOT_INPUT="${LR_ROOT:-$HOME_REAL/libertyrecomp-ps4-build}"
 
-# Keep all generated output in a dedicated directory below HOME. This prevents a bad LR_ROOT
-# override (/, HOME itself, the repository, or an ancestor of either) from making cleanup unsafe.
+# Resolve the parent without creating LR_ROOT. Requiring an existing parent and a plain
+# final path component keeps canonicalization side-effect-free and prevents symlink roots.
+if [[ "$LR_ROOT_INPUT" != /* ]]; then
+    echo "ERROR: LR_ROOT must be an absolute path: $LR_ROOT_INPUT" >&2
+    exit 1
+fi
+if [[ "$LR_ROOT_INPUT" == "/" || "$LR_ROOT_INPUT" == */ ]]; then
+    echo "ERROR: LR_ROOT must name a dedicated directory, not a filesystem root: $LR_ROOT_INPUT" >&2
+    exit 1
+fi
+LR_PARENT_INPUT="$(dirname -- "$LR_ROOT_INPUT")"
+LR_BASE="$(basename -- "$LR_ROOT_INPUT")"
+if [[ -z "$LR_BASE" || "$LR_BASE" == "." || "$LR_BASE" == ".." ]]; then
+    echo "ERROR: invalid LR_ROOT directory name: $LR_ROOT_INPUT" >&2
+    exit 1
+fi
+if [[ ! -d "$LR_PARENT_INPUT" ]]; then
+    echo "ERROR: LR_ROOT parent must already exist: $LR_PARENT_INPUT" >&2
+    exit 1
+fi
+LR_PARENT="$(cd -- "$LR_PARENT_INPUT" && pwd -P)"
+LR_ROOT="$LR_PARENT/$LR_BASE"
+
 if [[ -L "$LR_ROOT" ]]; then
     echo "ERROR: LR_ROOT must not be a symbolic link: $LR_ROOT" >&2
     exit 1
 fi
-mkdir -p -- "$LR_ROOT"
-LR_ROOT="$(cd -- "$LR_ROOT" && pwd -P)"
-HOME_REAL="$(cd -- "${HOME:?HOME must be set}" && pwd -P)"
-
 if [[ "$LR_ROOT" == "$HOME_REAL" ]]; then
     echo "ERROR: LR_ROOT must be a dedicated directory below HOME, not HOME itself." >&2
     exit 1
@@ -44,25 +67,41 @@ case "$LR_ROOT/" in
         exit 1
         ;;
 esac
-case "$REPO_ROOT/" in
-    "$LR_ROOT/"*)
-        echo "ERROR: LR_ROOT must not contain the GTA IV repository: $LR_ROOT" >&2
-        exit 1
-        ;;
-esac
 
-# Refuse symlink or non-directory output targets. Existing directories are moved aside only
-# after the replacement toolchain has been built successfully.
-for target in "$LR_ROOT/oo" "$LR_ROOT/llvm"; do
+# The documented layout is $LR_ROOT/src/LibertyRecomp, so the repository is allowed
+# to be nested below LR_ROOT. Only reject LR_ROOT inside the repository itself.
+# Check every managed directory before the first mkdir, source, download or build write.
+MANAGED_DIRS=(
+    "$LR_ROOT/oo"
+    "$LR_ROOT/llvm"
+    "$LR_ROOT/build"
+    "$LR_ROOT/build/host-shader-tools"
+    "$LR_ROOT/host-tools"
+    "$LR_ROOT/host-tools/bin"
+    "$LR_ROOT/host-tools/dxc"
+    "$LR_ROOT/host-tools/dxc/bin"
+    "$LR_ROOT/host-tools/dxc/lib"
+    "$LR_ROOT/host-compat"
+    "$LR_ROOT/game"
+    "$LR_ROOT/game/iso"
+    "$LR_ROOT/game/payload"
+    "$LR_ROOT/game/SystemUpdate"
+)
+for target in "${MANAGED_DIRS[@]}"; do
     if [[ -L "$target" ]]; then
-        echo "ERROR: refusing to replace symlinked toolchain path: $target" >&2
+        echo "ERROR: refusing symlinked managed path: $target" >&2
         exit 1
     fi
     if [[ -e "$target" && ! -d "$target" ]]; then
-        echo "ERROR: toolchain path exists but is not a directory: $target" >&2
+        echo "ERROR: managed path exists but is not a directory: $target" >&2
         exit 1
     fi
 done
+
+# All path checks have passed. Creating LR_ROOT is now safe.
+if [[ ! -d "$LR_ROOT" ]]; then
+    mkdir -- "$LR_ROOT"
+fi
 
 export LR_ROOT
 HOST_PATH="$PATH"
