@@ -131,7 +131,7 @@ source "$SCRIPT_DIR/ps4-env.sh"
 
 # Fail before creating staging directories or downloading DXC when upstream inputs are absent.
 missing=0
-for tool in cmake ninja curl tar clang-21 clang++-21 llvm-ar-21; do
+for tool in cmake ninja curl tar clang-21 clang++-21 ld.lld-21 lld-21 llvm-ar-21 llvm-ranlib-21 llvm-nm-21 llvm-objcopy-21 llvm-strip-21; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "ERROR: required host tool is missing: $tool" >&2
         missing=1
@@ -139,8 +139,10 @@ for tool in cmake ninja curl tar clang-21 clang++-21 llvm-ar-21; do
 done
 for path in \
     "$OPENORBIS/bin/ld.lld" \
+    "$OPENORBIS/bin/create-fself" \
     "$OPENORBIS/link.x" \
     "$OPENORBIS/lib/crt1.o" \
+    "$OPENORBIS/lib/libclang_rt.builtins-x86_64.a" \
     "$DOLPHIN_SYSROOT/include/c++/v1/__config_site" \
     "$DOLPHIN_SYSROOT/lib/libc++.a" \
     "$DOLPHIN_SYSROOT/lib/libc++abi.a" \
