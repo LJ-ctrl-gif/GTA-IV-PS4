@@ -17,7 +17,7 @@ agree with one another.
 |---|---|
 | DolphinPS4 integration scripts and port | `iHaiDeeZ/DolphinPS4` commit `888ff3e913801c0c2b2531ddf4f767772ed45dd9` |
 | Dolphin source used by that integration | `dolphin-emu/dolphin` commit `771fb154059c5812d6a715a23226249cc42877a2` |
-| Mesa source | Mesa `26.0.8`, with the pinned DolphinPS4 `patches/mesa-ps4.patch` integration |
+| Mesa source | Mesa `26.0.8`, commit `60e95b787857afbc9a00b693b91c0d9c8923a430`, with the pinned DolphinPS4 `patches/mesa-ps4.patch` integration |
 | GTA IV PS4 Mesa adjustment | `ps4/patches/mesa-aco-mubuf-addr64.patch` |
 | DXC host library | Microsoft DirectXShaderCompiler `v1.9.2609`, asset `linux_dxc_2026_09_28.x86_x64.tar.gz` |
 | LLVM host tools | Clang/LLD/LLVM 21 |
