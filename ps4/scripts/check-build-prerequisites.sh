@@ -69,6 +69,26 @@ else
     fail "Mesa ACO source file $mesa_aco"
 fi
 
+# The source must also contain the base DolphinPS4 GNM integration, not just
+# the GTA IV-specific ACO workaround.
+if [[ -f "$MESA_SOURCE/meson.build" ]]; then
+    grep -Fq "is_ps4 = cc.get_define('__ORBIS__') != ''" "$MESA_SOURCE/meson.build" \
+        || fail "DolphinPS4 PS4 Meson integration in $MESA_SOURCE/meson.build"
+else
+    fail "Mesa Meson source file $MESA_SOURCE/meson.build"
+fi
+if [[ -f "$MESA_SOURCE/src/amd/common/ac_ps4_drm.c" ]]; then
+    :
+else
+    fail "DolphinPS4 PS4 AMDGPU winsys source $MESA_SOURCE/src/amd/common/ac_ps4_drm.c"
+fi
+if [[ -f "$MESA_SOURCE/src/amd/vulkan/radv_cmd_buffer.c" ]]; then
+    grep -Fq "#ifdef __PS4__" "$MESA_SOURCE/src/amd/vulkan/radv_cmd_buffer.c" \
+        || fail "DolphinPS4 PS4 RADV command-buffer integration"
+else
+    fail "Mesa RADV command-buffer source $MESA_SOURCE/src/amd/vulkan/radv_cmd_buffer.c"
+fi
+
 MESA="$LR_ROOT/mesa-build"
 mesa_libraries=(
     src/amd/vulkan/libvulkan_radeon.a
