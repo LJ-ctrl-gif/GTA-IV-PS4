@@ -14,6 +14,8 @@ MESA_LINK="$DOLPHIN_BUILD/src/mesa"
 MESA_BUILD="$DOLPHIN_BUILD/build/mesa"
 MESA_BUILD_LINK="$LR_ROOT/mesa-build"
 
+export PATH="$DOLPHIN_BUILD/mesa-venv/bin:$LR_ROOT/host-tools/bin:$PATH"
+
 [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || {
     echo "ERROR: Mesa PS4 build requires Linux x86_64." >&2
     exit 1
