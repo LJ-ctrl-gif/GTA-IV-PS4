@@ -2,7 +2,7 @@ name: Repository setup and desktop builds
 
 on:
   push:
-    branches: [main]
+    branches: [main, automation/ps4-runtime-assets]
   pull_request:
   workflow_dispatch:
 
