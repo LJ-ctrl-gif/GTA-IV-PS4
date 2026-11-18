@@ -14,6 +14,10 @@ endif()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Check source prerequisites before project() enters the vcpkg toolchain.
+# Keep a compatibility FindPythonInterp module for pinned glslang/SPIRV-Tools.
+# CMake 4 removed the legacy module; the shim delegates to FindPython3.
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/compat")
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DependencyPatches.cmake")
 liberty_require_dependency_sources("${CMAKE_CURRENT_SOURCE_DIR}")
 if(APPLE AND NOT CMAKE_TOOLCHAIN_FILE)
