@@ -27,6 +27,7 @@ jobs:
     env:
       LR_ROOT: ${{ github.workspace }}/../libertyrecomp-ps4-build
       DOLPHIN_BUILD: ${{ github.workspace }}/../dolphinps4-build
+      PSB: ${{ github.workspace }}/../dolphinps4-build
       OPENORBIS: /opt/pacbrew/ps4/openorbis
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -108,10 +109,11 @@ jobs:
           set -euo pipefail
           export PSB="$DOLPHIN_BUILD"
           cd "$DOLPHIN_BUILD/DolphinPS4"
+          chmod +x toolchain/*.sh
           source toolchain/env.sh
-          toolchain/prepare-sysroot.sh
-          toolchain/build-libcxx.sh
-          toolchain/build-runtime.sh
+          bash toolchain/prepare-sysroot.sh
+          bash toolchain/build-libcxx.sh
+          bash toolchain/build-runtime.sh
           test -f "$DOLPHIN_BUILD/sysroot/lib/libc++.a"
           test -f "$DOLPHIN_BUILD/sysroot/lib/libc++abi.a"
 
