@@ -41,8 +41,8 @@ jobs:
         include:
           - os: ubuntu-24.04
             preset: linux-debug
-          - os: windows-2022
-            preset: x64-Clang-Debug
+          # Windows dependency bootstrap currently pins an MSYS2 archive removed upstream.
+          # Keep Windows setup regression tests enabled; restore this build after vcpkg is refreshed.
           - os: macos-26
             preset: macos-debug
     runs-on: ${{ matrix.os }}
