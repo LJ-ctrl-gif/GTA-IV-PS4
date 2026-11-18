@@ -44,7 +44,7 @@ jobs:
       - name: Install Linux and PacBrew prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential autoconf automake libtool cmake nasm git curl             python3 python3-pip python3-venv pkg-config zip unzip rsync libarchive-tools             pacman-package-manager makepkg
+          sudo apt-get install -y build-essential autoconf automake libtool cmake nasm git curl python3 python3-pip python3-venv pkg-config zip unzip rsync libarchive-tools pacman-package-manager makepkg
           sudo install -d /etc/pacman.d
           printf '%s\n' 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' | sudo tee /etc/pacman.d/mirrorlist
           sudo tee -a /etc/pacman.conf >/dev/null <<'PACMAN'
@@ -106,6 +106,7 @@ jobs:
       - name: Build PS4 C++ sysroot and runtime
         run: |
           set -euo pipefail
+          export PSB="$DOLPHIN_BUILD"
           cd "$DOLPHIN_BUILD/DolphinPS4"
           source toolchain/env.sh
           toolchain/prepare-sysroot.sh
