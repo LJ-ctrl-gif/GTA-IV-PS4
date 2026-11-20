@@ -112,6 +112,8 @@ jobs:
           chmod +x toolchain/*.sh
           source toolchain/env.sh
           bash toolchain/prepare-sysroot.sh
+          chmod +x "$DOLPHIN_BUILD/DolphinPS4/toolchain/bin/ps4-"*
+          ls -l "$DOLPHIN_BUILD/DolphinPS4/toolchain/bin/ps4-"*
           bash toolchain/build-libcxx.sh
           bash toolchain/build-runtime.sh
           test -f "$DOLPHIN_BUILD/sysroot/lib/libc++.a"
