@@ -306,4 +306,7 @@ fi
 echo "OO_PS4_TOOLCHAIN=$LR_ROOT/oo"
 ls -la "$LR_ROOT/oo/lib/libcxx_ps4_compat.a"
 "$LR_ROOT/llvm/bin/clang" --version | head -1
-ls "$LR_PAYLOAD"
+# The native build creates the runtime/PKG; game data is supplied separately by the owner.
+# Keep an empty payload directory when no local ISO has been staged.
+mkdir -p "$LR_PAYLOAD"
+ls -la "$LR_PAYLOAD"
