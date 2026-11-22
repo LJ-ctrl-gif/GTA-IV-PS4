@@ -26,7 +26,7 @@ for tool in git readlink ln meson ninja pkg-config; do
         exit 1
     }
 done
-[[ -x "$DOLPHINPS4_REPO/scripts/build-mesa.sh" ]] || {
+[[ -f "$DOLPHINPS4_REPO/scripts/build-mesa.sh" ]] || {
     echo "ERROR: DolphinPS4 build-mesa.sh missing; run prepare-mesa-source.sh first." >&2
     exit 1
 }
