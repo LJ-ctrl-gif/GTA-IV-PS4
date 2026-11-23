@@ -124,7 +124,7 @@ jobs:
           set -euo pipefail
           python3 -m venv "$DOLPHIN_BUILD/mesa-venv"
           "$DOLPHIN_BUILD/mesa-venv/bin/pip" install --upgrade pip
-          "$DOLPHIN_BUILD/mesa-venv/bin/pip" install meson mako pyyaml
+          "$DOLPHIN_BUILD/mesa-venv/bin/pip" install meson mako pyyaml packaging
 
       - name: Prepare host shader tools and DXC
         run: |
