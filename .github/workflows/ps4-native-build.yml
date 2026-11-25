@@ -147,6 +147,7 @@ jobs:
 
       - name: Compile Liberty Recompiled for PS4
         run: |
+          # Link against the RADV archive without re-adding Mesa-owned WSI/runtime archives.
           set -euo pipefail
           cd "$LR_ROOT/src/LibertyRecomp"
           bash ps4/scripts/build-ps4.sh all
