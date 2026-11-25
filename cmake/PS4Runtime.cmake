@@ -147,9 +147,8 @@ function(ps4_link_mesa target)
         src/amd/vulkan/libvulkan_radeon.a src/amd/common/libamd_common.a
         src/amd/compiler/libaco.a src/amd/addrlib/libaddrlib.a src/vulkan/util/libvulkan_util.a
         src/compiler/spirv/libvtn.a src/compiler/nir/libnir.a src/compiler/libcompiler.a
-        # RADV's static archive already incorporates Vulkan instance/runtime objects.
-        # Linking these two archives again creates duplicate vk_instance_* and vk_meta_* symbols.
-        src/vulkan/wsi/libvulkan_wsi.a
+        # RADV's static archive already incorporates Vulkan runtime and WSI objects.
+        # Linking these archives again creates duplicate vk_instance_*, vk_meta_* and wsi_* symbols.
         src/util/libxmlconfig.a src/util/libmesa_util.a src/util/libmesa_util_simd.a
         src/util/libmesa_util_clflush.a src/util/libmesa_util_clflushopt.a src/util/libparson.a
         src/util/blake3/libblake3.a src/c11/impl/libmesa_util_c11.a)
