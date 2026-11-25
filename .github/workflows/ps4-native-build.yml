@@ -161,12 +161,20 @@ jobs:
           ls -lh "$LR_ROOT/out"/*.pkg
           test -s "$LR_ROOT/oelf/v01.00.oelf"
 
+      - name: Stage verified PS4 PKG and symbols
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          cp "$LR_ROOT"/out/*.pkg "$GITHUB_WORKSPACE/artifacts/"
+          cp "$LR_ROOT/oelf/v01.00.oelf" "$GITHUB_WORKSPACE/artifacts/"
+          test -s "$GITHUB_WORKSPACE"/artifacts/*.pkg
+          test -s "$GITHUB_WORKSPACE/artifacts/v01.00.oelf"
+          ls -lh "$GITHUB_WORKSPACE"/artifacts/*
+
       - name: Upload verified PS4 PKG and symbols
         uses: actions/upload-artifact@v4
         with:
           name: GTA-IV-PS4-PKG-01.00
           if-no-files-found: error
           retention-days: 30
-          path: |
-            ${{ github.workspace }}/../libertyrecomp-ps4-build/out/*.pkg
-            ${{ github.workspace }}/../libertyrecomp-ps4-build/oelf/v01.00.oelf
+          path: artifacts/*
