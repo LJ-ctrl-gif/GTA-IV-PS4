@@ -1,4 +1,6 @@
 #include <SDL3/SDL.h>
+#include <orbis/Sysmodule.h>
+#include <orbis/UserService.h>
 #include <chrono>
 #include <cstddef>
 #include <ctime>
@@ -8,26 +10,26 @@
 #include <string>
 #include <system_error>
 namespace fs = std::filesystem;
-static const fs::path ROOT="/data/LibertyRecomp", GAME=ROOT/"game", SOURCE=ROOT/"source", DIAG=ROOT/"Diagnostics";
+static constexpr const char* ROOT_PATH="/data/LibertyRecomp";
 struct Scan { bool folders_ok=false, xex=false, xexp=false, update_dir=false; std::string error, report; };
 static std::string stamp(){ std::time_t n=std::time(nullptr); char b[32]{}; std::tm* t=std::localtime(&n); if(t) std::strftime(b,sizeof(b),"%Y-%m-%d %H:%M:%S",t); return b; }
 static bool nonempty_file(const fs::path& p){ std::error_code e; return fs::is_regular_file(p,e)&&!e&&fs::file_size(p,e)>0&&!e; }
 static Scan prepare_and_scan(){
- Scan s; std::error_code e;
- fs::create_directories(SOURCE,e); if(e) s.error="source folder: "+e.message();
- e.clear(); fs::create_directories(GAME,e); if(e&&s.error.empty()) s.error="game folder: "+e.message();
- e.clear(); fs::create_directories(DIAG,e); if(e&&s.error.empty()) s.error="Diagnostics folder: "+e.message();
- const fs::path env=ROOT/"env.txt";
+ Scan s; const fs::path root=ROOT_PATH, game=root/"game", source=root/"source", diag=root/"Diagnostics"; std::error_code e;
+ fs::create_directories(source,e); if(e) s.error="source folder: "+e.message();
+ e.clear(); fs::create_directories(game,e); if(e&&s.error.empty()) s.error="game folder: "+e.message();
+ e.clear(); fs::create_directories(diag,e); if(e&&s.error.empty()) s.error="Diagnostics folder: "+e.message();
+ const fs::path env=root/"env.txt";
  if(!fs::exists(env,e)&&!e){ std::ofstream f(env); if(f) f<<"# Liberty Recompiled settings. Existing settings are never overwritten.\n"; }
- s.folders_ok=fs::is_directory(SOURCE)&&fs::is_directory(GAME)&&fs::is_directory(DIAG);
- s.xex=nonempty_file(GAME/"default.xex"); s.xexp=nonempty_file(GAME/"default.xexp"); s.update_dir=fs::is_directory(GAME/"update");
+ s.folders_ok=fs::is_directory(source)&&fs::is_directory(game)&&fs::is_directory(diag);
+ s.xex=nonempty_file(game/"default.xex"); s.xexp=nonempty_file(game/"default.xexp"); s.update_dir=fs::is_directory(game/"update");
  std::ostringstream o; o<<"GTA IV SETUP MANAGER\nLast scan: "<<stamp()<<"\n";
  o<<"Folders: "<<(s.folders_ok?"READY":"ERROR")<<"\ndefault.xex: "<<(s.xex?"FOUND":"MISSING")<<"\ndefault.xexp: "<<(s.xexp?"FOUND":"MISSING");
  o<<"\nupdate/: "<<(s.update_dir?"FOUND":"NOT DETECTED")<<"\nGame data: "<<((s.xex&&s.xexp)?"READY":"WAITING FOR FILES");
  if(!s.error.empty()) o<<"\nError: "<<s.error;
- o<<"\n\nExpected destination: "<<GAME.string()<<"\nUpload the complete prepared folder contents here. Do not create dummy game files.\n"; s.report=o.str();
- std::ofstream status(ROOT/"setup-status.txt",std::ios::trunc); if(status) status<<s.report;
- std::ofstream log(DIAG/"setup-manager.log",std::ios::app);
+ o<<"\n\nExpected destination: "<<game.string()<<"\nUpload the complete prepared folder contents here. Do not create dummy game files.\n"; s.report=o.str();
+ std::ofstream status(root/"setup-status.txt",std::ios::trunc); if(status) status<<s.report;
+ std::ofstream log(diag/"setup-manager.log",std::ios::app);
  if(log) log<<"["<<stamp()<<"] scan: folders="<<s.folders_ok<<" default.xex="<<s.xex<<" default.xexp="<<s.xexp<<" update_dir="<<s.update_dir<<(s.error.empty()?"":" error="+s.error)<<"\n";
  return s;
 }
@@ -68,4 +70,12 @@ static int run_app(){
 }
 extern "C" int user_malloc_init(void);
 extern "C" int user_malloc_finalize(void);
-int ps4_main(size_t,const void*){if(user_malloc_init()!=0)return 1;int result=run_app();user_malloc_finalize();return result;}
+int ps4_main(size_t,const void*){
+ if(user_malloc_init()!=0)return 1;
+ OrbisUserServiceInitializeParams user_params={}; user_params.priority=256;
+ sceUserServiceInitialize(&user_params);
+ sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_PAD);
+ int result=run_app();
+ user_malloc_finalize();
+ return result;
+}
