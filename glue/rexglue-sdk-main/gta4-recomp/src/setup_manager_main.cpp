@@ -68,4 +68,4 @@ static int run_app(){
 }
 extern "C" int user_malloc_init(void);
 extern "C" int user_malloc_finalize(void);
-extern "C" int ps4_main(size_t,const void*){if(user_malloc_init()!=0)return 1;int result=run_app();user_malloc_finalize();return result;}
+int ps4_main(size_t,const void*){if(user_malloc_init()!=0)return 1;int result=run_app();user_malloc_finalize();return result;}
