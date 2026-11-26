@@ -206,14 +206,21 @@ jobs:
           grep -Fq 'LR_ROOT/mesa-build' ps4/scripts/build-mesa.sh
           grep -Fq 'build-mesa.sh setup' ps4/DEPENDENCIES.md
 
-      - name: Verify Mesa static runtime link dependencies
+      - name: Verify Mesa static runtime archive handling
         run: |
           set -euo pipefail
           grep -Fq 'libertyrecomp-ps4-build/mesa-build' cmake/PS4Runtime.cmake
+          # RADV's archive already contains Vulkan runtime and WSI objects.
+          # The preflight checks their generated archives, but the linker must
+          # not add them again or it creates duplicate Vulkan symbols.
           for library in libvulkan_instance.a libvulkan_runtime.a libvulkan_wsi.a; do
-            grep -Fq "$library" cmake/PS4Runtime.cmake
             grep -Fq "$library" ps4/scripts/check-build-prerequisites.sh
+            if grep -Fq "$library" cmake/PS4Runtime.cmake; then
+              echo "Do not link duplicate Mesa runtime archive: $library" >&2
+              exit 1
+            fi
           done
+          grep -Fq 'src/amd/vulkan/libvulkan_radeon.a' cmake/PS4Runtime.cmake
       - name: Verify Mesa source provenance checks
         run: |
           set -euo pipefail
