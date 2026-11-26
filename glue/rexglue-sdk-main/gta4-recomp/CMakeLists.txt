@@ -416,7 +416,7 @@ elseif(PS4)
 
     # Standalone setup utility with its own eboot and home-screen package.
     add_executable(GTAIVSetupManager src/setup_manager_main.cpp)
-    target_link_libraries(GTAIVSetupManager PRIVATE SDL3::SDL3)
+    target_link_libraries(GTAIVSetupManager PRIVATE SDL3::SDL3 ZLIB::ZLIB)
     target_include_directories(GTAIVSetupManager PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
