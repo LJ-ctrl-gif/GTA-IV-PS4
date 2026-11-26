@@ -416,14 +416,7 @@ elseif(PS4)
 
     # Independent setup utility: creates the runtime data layout and validates
     # the prepared game folder without changing the Liberty Recompiled install.
-    add_executable(GTAIVSetupManager src/setup_manager_main.cpp)
-    target_link_libraries(GTAIVSetupManager PRIVATE SDL3::SDL3)
-    set_target_properties(GTAIVSetupManager PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/GTAIVSetupManager")
-    ps4_configure_executable(GTAIVSetupManager)
-    ps4_link_mesa(GTAIVSetupManager)
-    ps4_add_eboot(GTAIVSetupManager)
-else()
+    else()
     add_library(gta4_recomp INTERFACE)
     target_include_directories(gta4_recomp INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
