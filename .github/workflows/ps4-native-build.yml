@@ -5,6 +5,7 @@ on:
     branches: [automation/ps4-runtime-assets]
     paths:
       - "ps4/**"
+      - "glue/rexglue-sdk-main/gta4-recomp/CMakeLists.txt"
       - ".github/workflows/ps4-native-build.yml"
       - "tools/setup_repo.py"
       - "tools/**"
@@ -145,12 +146,19 @@ jobs:
           cd "$LR_ROOT/src/LibertyRecomp"
           bash ps4/scripts/check-build-prerequisites.sh
 
-      - name: Compile Liberty Recompiled for PS4
+      - name: Compile Liberty Recompiled and GTA IV Setup Manager for PS4
         run: |
           # Link against the RADV archive without re-adding Mesa-owned WSI/runtime archives.
           set -euo pipefail
           cd "$LR_ROOT/src/LibertyRecomp"
           bash ps4/scripts/build-ps4.sh all
+
+      - name: Create GTA IV Setup Manager PS4 fake PKG
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/package-setup-manager.sh 01.00
+          test -s "$LR_ROOT/out/IV0000-GIVS00001_00-GTAIVSETUPMGR000.pkg"
 
       - name: Create PS4 fake PKG
         run: |
@@ -174,7 +182,7 @@ jobs:
       - name: Upload verified PS4 PKG and symbols
         uses: actions/upload-artifact@v4
         with:
-          name: GTA-IV-PS4-PKG-01.00
+          name: GTA-IV-PS4-APPS-01.00
           if-no-files-found: error
           retention-days: 30
           path: artifacts/*
