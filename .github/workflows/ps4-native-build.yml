@@ -175,7 +175,8 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           cp "$LR_ROOT"/out/*.pkg "$GITHUB_WORKSPACE/artifacts/"
           cp "$LR_ROOT/oelf/v01.00.oelf" "$GITHUB_WORKSPACE/artifacts/"
-          test -s "$GITHUB_WORKSPACE"/artifacts/*.pkg
+          test -s "$GITHUB_WORKSPACE/artifacts/IV0000-LBTY00001_00-LIBERTYRECOMP000.pkg"
+          test -s "$GITHUB_WORKSPACE/artifacts/IV0000-GIVS00001_00-GTAIVSETUPMGR000.pkg"
           test -s "$GITHUB_WORKSPACE/artifacts/v01.00.oelf"
           ls -lh "$GITHUB_WORKSPACE"/artifacts/*
 
