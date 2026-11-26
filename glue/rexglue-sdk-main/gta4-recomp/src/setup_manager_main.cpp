@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <orbis/Sysmodule.h>
 #include <orbis/UserService.h>
+#include <pthread.h>
 #include <chrono>
 #include <cstddef>
 #include <ctime>
@@ -68,14 +69,32 @@ static int run_app(){
  } draw(r,s);SDL_Delay(50);}
  SDL_DestroyRenderer(r);SDL_DestroyWindow(w);SDL_Quit();return 0;
 }
-extern "C" int user_malloc_init(void);
-extern "C" int user_malloc_finalize(void);
-int ps4_main(size_t,const void*){
- if(user_malloc_init()!=0)return 1;
+struct AppThreadArgs { int result=1; };
+static void* app_thread(void* opaque) {
+ auto* args=static_cast<AppThreadArgs*>(opaque);
+ args->result=run_app();
+ return nullptr;
+}
+int main(int,char**) {
+ const OrbisSysModuleInternal modules[]={
+  ORBIS_SYSMODULE_INTERNAL_SYSTEM_SERVICE,
+  ORBIS_SYSMODULE_INTERNAL_USER_SERVICE,
+  ORBIS_SYSMODULE_INTERNAL_VIDEO_OUT,
+  ORBIS_SYSMODULE_INTERNAL_AUDIOOUT,
+  ORBIS_SYSMODULE_INTERNAL_PAD,
+  ORBIS_SYSMODULE_INTERNAL_NET
+ };
+ for(auto module:modules) sceSysmoduleLoadModuleInternal(module);
  OrbisUserServiceInitializeParams user_params={}; user_params.priority=256;
  sceUserServiceInitialize(&user_params);
- sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_PAD);
- int result=run_app();
- user_malloc_finalize();
- return result;
+ AppThreadArgs args;
+ pthread_attr_t attr;
+ pthread_attr_init(&attr);
+ pthread_attr_setstacksize(&attr,16*1024*1024);
+ pthread_t thread;
+ const int error=pthread_create(&thread,&attr,app_thread,&args);
+ pthread_attr_destroy(&attr);
+ if(error!=0) return run_app();
+ pthread_join(thread,nullptr);
+ return args.result;
 }
