@@ -98,3 +98,5 @@ int main(int,char**) {
  pthread_join(thread,nullptr);
  return args.result;
 }
+
+int main(int argc, char** argv) { return ps4_main(static_cast<size_t>(argc), argv); }
