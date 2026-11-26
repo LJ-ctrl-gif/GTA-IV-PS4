@@ -56,11 +56,11 @@ static void draw(SDL_Renderer*r,const Scan&s){
 }
 static int run_app(){
  Scan s=prepare_and_scan();
- if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_GAMEPAD)){std::ofstream l(DIAG/"setup-manager.log",std::ios::app);if(l)l<<"["<<stamp()<<"] SDL_Init failed: "<<SDL_GetError()<<"\n";return 2;}
+ if(!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_GAMEPAD)){std::ofstream l(fs::path(ROOT_PATH)/"Diagnostics"/"setup-manager.log",std::ios::app);if(l)l<<"["<<stamp()<<"] SDL_Init failed: "<<SDL_GetError()<<"\n";return 2;}
  SDL_Window*w=SDL_CreateWindow("GTA IV Setup Manager",1920,1080,SDL_WINDOW_FULLSCREEN);
- if(!w){std::ofstream l(DIAG/"setup-manager.log",std::ios::app);if(l)l<<"["<<stamp()<<"] SDL_CreateWindow failed: "<<SDL_GetError()<<"\n";SDL_Quit();return 3;}
+ if(!w){std::ofstream l(fs::path(ROOT_PATH)/"Diagnostics"/"setup-manager.log",std::ios::app);if(l)l<<"["<<stamp()<<"] SDL_CreateWindow failed: "<<SDL_GetError()<<"\n";SDL_Quit();return 3;}
  SDL_Renderer*r=SDL_CreateRenderer(w,nullptr);
- if(!r){std::ofstream l(DIAG/"setup-manager.log",std::ios::app);if(l)l<<"["<<stamp()<<"] SDL_CreateRenderer failed: "<<SDL_GetError()<<"\n";SDL_DestroyWindow(w);SDL_Quit();return 4;}
+ if(!r){std::ofstream l(fs::path(ROOT_PATH)/"Diagnostics"/"setup-manager.log",std::ios::app);if(l)l<<"["<<stamp()<<"] SDL_CreateRenderer failed: "<<SDL_GetError()<<"\n";SDL_DestroyWindow(w);SDL_Quit();return 4;}
  SDL_SetRenderScale(r,2.0f,2.0f); bool running=true;
  while(running){SDL_Event e;while(SDL_PollEvent(&e)){
   if(e.type==SDL_EVENT_QUIT)running=false;
@@ -99,4 +99,3 @@ int main(int,char**) {
  return args.result;
 }
 
-int main(int argc, char** argv) { return ps4_main(static_cast<size_t>(argc), argv); }
