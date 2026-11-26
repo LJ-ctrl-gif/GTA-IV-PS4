@@ -1,4 +1,5 @@
 name: Native PS4 PKG Build
+# Re-run native packaging after the Mesa validation correction.
 
 on:
   push:
