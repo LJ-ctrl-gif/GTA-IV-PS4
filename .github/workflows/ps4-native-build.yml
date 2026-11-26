@@ -2,7 +2,7 @@ name: Native PS4 PKG Build
 
 on:
   push:
-    branches: [automation/ps4-runtime-assets]
+    branches: [automation/ps4-runtime-assets, feature/gta-iv-setup-manager]
     paths:
       - "ps4/**"
       - "glue/rexglue-sdk-main/gta4-recomp/CMakeLists.txt"
