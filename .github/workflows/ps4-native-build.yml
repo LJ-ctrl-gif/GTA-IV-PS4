@@ -6,6 +6,7 @@ on:
     paths:
       - "ps4/**"
       - "glue/rexglue-sdk-main/gta4-recomp/CMakeLists.txt"
+      - "glue/rexglue-sdk-main/gta4-recomp/src/setup_manager_main.cpp"
       - ".github/workflows/ps4-native-build.yml"
       - "tools/setup_repo.py"
       - "tools/**"
