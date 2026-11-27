@@ -12,6 +12,7 @@ on:
       - "tools/setup_repo.py"
       - "tools/**"
       - "CMakeLists.txt"
+      - "glue/CMakeLists.txt"
       - "CMakePresets.json"
       - "cmake/**"
   workflow_dispatch:
