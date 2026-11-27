@@ -28,3 +28,9 @@ if(APPLE AND NOT TARGET MoltenVK)
 endif()
 
 add_subdirectory("${REXSDK_DIR}/gta4-recomp" "${CMAKE_CURRENT_BINARY_DIR}/gta4-recomp")
+
+# Mesa's PS4 static utility archive uses zlib compression and CRC routines.
+# Keep zlib after the static Mesa archives so lld can resolve those references.
+if(PS4 AND TARGET GTAIVSetupManager)
+    target_link_libraries(GTAIVSetupManager PRIVATE z)
+endif()
