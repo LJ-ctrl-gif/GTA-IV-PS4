@@ -5,6 +5,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <string>
 #include <system_error>
 
@@ -86,8 +87,8 @@ Scan ScanFiles() {
 
 class SetupDialog final : public rex::ui::ImGuiDialog {
  public:
-  explicit SetupDialog(rex::ui::ImGuiDrawer* drawer)
-      : ImGuiDialog(drawer), scan_(ScanFiles()) {}
+  SetupDialog(rex::ui::ImGuiDrawer* drawer, std::function<void()> quit)
+      : ImGuiDialog(drawer), quit_(std::move(quit)), scan_(ScanFiles()) {}
 
  private:
   void OnDraw(ImGuiIO&) override {
@@ -127,10 +128,11 @@ class SetupDialog final : public rex::ui::ImGuiDialog {
         }
       }
       ImGui::SameLine();
-      if (ImGui::Button("CLOSE", ImVec2(120, 42))) Close();
+      if (ImGui::Button("EXIT APP", ImVec2(120, 42)) && quit_) quit_();
     }
     ImGui::End();
   }
+  std::function<void()> quit_;
   Scan scan_;
 };
 
@@ -153,7 +155,7 @@ class SetupManagerApp final : public rex::ReXApp {
     config.gpu_plugin = "xenos";
   }
   void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {
-    new SetupDialog(drawer);
+    new SetupDialog(drawer, [this] { app_context().QuitFromUIThread(); });
   }
 };
 }  // namespace
