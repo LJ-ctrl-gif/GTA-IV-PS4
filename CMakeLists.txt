@@ -14,6 +14,10 @@ endif()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Check source prerequisites before project() enters the vcpkg toolchain.
+# Keep a compatibility FindPythonInterp module for pinned glslang/SPIRV-Tools.
+# CMake 4 removed the legacy module; the shim delegates to FindPython3.
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/compat")
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DependencyPatches.cmake")
 liberty_require_dependency_sources("${CMAKE_CURRENT_SOURCE_DIR}")
 if(APPLE AND NOT CMAKE_TOOLCHAIN_FILE)
@@ -99,15 +103,23 @@ option(LIBERTY_RECOMP_ANDROID_RUNTIME_ASSETS
     "Android: expect the game payload to be supplied at runtime (skip CMake-time validation)"
     OFF)
 
+option(LIBERTY_RECOMP_PS4_RUNTIME_ASSETS
+    "PS4: expect game assets to be installed on the console at runtime"
+    OFF)
+
 if(NOT LIBERTY_RECOMP_TARGET_PLATFORM STREQUAL "desktop")
     message(STATUS "Embedded game path: ${LIBERTY_RECOMP_EMBEDDED_GAME_PATH}")
 
-    if(LIBERTY_RECOMP_TARGET_PLATFORM STREQUAL "android" AND LIBERTY_RECOMP_ANDROID_RUNTIME_ASSETS)
-        message(STATUS
-            "Android: LIBERTY_RECOMP_ANDROID_RUNTIME_ASSETS=ON — skipping build-time\n"
-            "         game-file validation. The Activity's folder-picker flow is\n"
-            "         expected to hand the path to the native runtime via\n"
-            "         Java_com_libertyrecomp_LibertySDLActivity_nativeSetGameRoot.")
+    if((LIBERTY_RECOMP_TARGET_PLATFORM STREQUAL "android" AND LIBERTY_RECOMP_ANDROID_RUNTIME_ASSETS)
+       OR (LIBERTY_RECOMP_TARGET_PLATFORM STREQUAL "ps4" AND LIBERTY_RECOMP_PS4_RUNTIME_ASSETS))
+        if(LIBERTY_RECOMP_TARGET_PLATFORM STREQUAL "ps4")
+            message(STATUS
+                "PS4: runtime game assets enabled — skipping build-time validation.\n"
+                "     Game files must be installed separately on the console.")
+        else()
+            message(STATUS
+                "Android: runtime game assets enabled — skipping build-time validation.")
+        endif()
     else()
         if(NOT EXISTS "${LIBERTY_RECOMP_EMBEDDED_GAME_PATH}")
             message(FATAL_ERROR

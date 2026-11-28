@@ -413,6 +413,25 @@ elseif(PS4)
     ps4_configure_executable(LibertyRecomp)
     ps4_link_mesa(LibertyRecomp)
     ps4_add_eboot(LibertyRecomp)
+
+    # Standalone setup utility. Use the same ReX PS4 entry point, window,
+    # presenter and ImGui lifecycle as LibertyRecomp, but its app overrides
+    # OnInitialize to skip guest runtime construction and XEX launch.
+    add_executable(GTAIVSetupManager src/setup_manager_main.cpp)
+    target_link_libraries(GTAIVSetupManager PRIVATE
+        rex::runtime
+        SDL3::SDL3
+    )
+    target_include_directories(GTAIVSetupManager PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/imgui
+    )
+    rexglue_configure_target(GTAIVSetupManager GPU_PLUGINS xenos)
+    set_target_properties(GTAIVSetupManager PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/GTAIVSetupManager")
+    ps4_configure_executable(GTAIVSetupManager)
+    ps4_link_mesa(GTAIVSetupManager)
+    ps4_add_eboot(GTAIVSetupManager)
 else()
     add_library(gta4_recomp INTERFACE)
     target_include_directories(gta4_recomp INTERFACE

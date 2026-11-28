@@ -75,25 +75,40 @@ All files are in `/data/LibertyRecomp/`:
 
 Prerequisites:
 
-- [PacBrew](https://github.com/PacBrew)'s OpenOrbis at `/opt/pacbrew/ps4/openorbis`, plus clang/lld 21.
-- A [DolphinPS4](https://github.com/iHaiDeeZ/DolphinPS4) build tree in `~/dolphinps4-build`: its
-  LLVM 21 libc++ for the PS4, its libc header overlay and its Mesa RADV port.
-- Mesa: a checkout of DolphinPS4's Mesa with [`patches/mesa-aco-mubuf-addr64.patch`](patches/mesa-aco-mubuf-addr64.patch)
-  applied, configured with DolphinPS4's meson cross file and built into `~/libertyrecomp-ps4-build/mesa-build`
-  (only the static libraries listed in `cmake/PS4Runtime.cmake` are needed). On GFX7, ACO reaches
-  global memory with FLAT instructions, which hang the PS4 GPU; the patch uses MUBUF addr64
-  instead, as on GFX6.
-- The source tree at `~/libertyrecomp-ps4-build/src/LibertyRecomp` (this repository, branch
-  `ps4-port`, with submodules). Apply [`patches/rexglue-ffmpeg-config-ps4.patch`](patches/rexglue-ffmpeg-config-ps4.patch)
-  inside `glue/rexglue-sdk-main/thirdparty/FFmpeg`.
+- Linux x86_64 (WSL Ubuntu is supported), PacBrew OpenOrbis at
+  `/opt/pacbrew/ps4/openorbis`, and Clang/LLVM 21.
+- The pinned DolphinPS4 integration checkout, PS4 sysroot, Dolphin source/glslang tree, and
+  libdrm headers. See [DEPENDENCIES.md](DEPENDENCIES.md) for exact revisions and required paths.
+- Python 3 with venv support, Ninja, Meson, Mako and PyYAML. Mesa's Python packages belong in
+  `$DOLPHIN_BUILD/mesa-venv`.
+- This repository at `$LR_ROOT/src/LibertyRecomp`, with submodules initialized and the
+  `patches/rexglue-ffmpeg-config-ps4.patch` applied inside
+  `glue/rexglue-sdk-main/thirdparty/FFmpeg`.
 
-Then:
+Prepare the pinned upstream sources and the host Mesa environment:
 
 ```bash
-bash ps4/scripts/setup-toolchain.sh        # once: overlay toolchain, host shader tools, DXC
-bash ps4/scripts/build-ps4.sh              # configure + build
-bash ps4/scripts/package-ps4.sh 01.00      # -> fake PKG (bump the version for every install)
+bash ps4/scripts/prepare-mesa-source.sh
+python3 -m venv "$HOME/dolphinps4-build/mesa-venv"
+"$HOME/dolphinps4-build/mesa-venv/bin/pip" install meson mako pyyaml
 ```
+
+Provision the DolphinPS4 sysroot, Dolphin source and libdrm headers using its pinned
+[build guide](https://github.com/iHaiDeeZ/DolphinPS4/blob/888ff3e913801c0c2b2531ddf4f767772ed45dd9/BUILDING.md).
+Then run the build steps:
+
+```bash
+bash ps4/scripts/setup-toolchain.sh            # overlay toolchain, host shader tools and DXC
+bash ps4/scripts/build-mesa.sh setup           # pinned Mesa PS4 RADV static libraries
+bash ps4/scripts/check-build-prerequisites.sh  # read-only: verify all build inputs
+bash ps4/scripts/build-ps4.sh                  # configure + compile the PS4 executable
+bash ps4/scripts/package-ps4.sh 01.00          # fake PKG; bump version for each install
+```
+
+The source-preparation script downloads source code only; it never fetches or embeds GTA IV game
+files. Use only game data you own or are authorized to use. A passing validation workflow is not
+a native build: the executable and PKG are only confirmed after the full provisioned build and
+package steps complete.
 
 ## How the port works (pointers for whoever continues)
 
@@ -115,3 +130,7 @@ bash ps4/scripts/package-ps4.sh 01.00      # -> fake PKG (bump the version for e
 - The next steps that looked worthwhile: a shorter draw distance (fewer draws for both busy
   threads), cheaper command allocation, and splitting the render worker's intake and recording
   across two threads. See the measurements above for why none of them reaches 30 fps alone.
+
+
+For pinned upstream revisions, configurable `DOLPHIN_BUILD`/`DOLPHIN_SYSROOT` paths, and the
+full prerequisite list, see [DEPENDENCIES.md](DEPENDENCIES.md).

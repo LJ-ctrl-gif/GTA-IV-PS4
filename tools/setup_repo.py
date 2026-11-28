@@ -215,7 +215,8 @@ class Patches:
                 raise SetupError(f'Duplicate patched dependency: {entry["path"]}')
             paths.add(entry['path'])
             patch = source_path(self.directory, entry['patch'])
-            if hashlib.sha256(patch.read_bytes()).hexdigest() != entry['sha256']:
+            # Git may normalize checked-out patch files to CRLF on Windows.
+            if digest(patch.read_bytes()) != entry['sha256']:
                 raise SetupError(f'Dependency patch checksum mismatch: {patch}')
             names = set()
             for item in entry['files']:
@@ -323,11 +324,11 @@ class Patches:
                 data = original.stdout if original.returncode == 0 else None
                 if (digest(data) if data is not None else 'absent') != item['before_sha256']:
                     raise SetupError(f'Previous dependency baseline does not match its receipt: {path}')
-                restore.append((path, data))
+                restore.append((source, name, path, data))
             actions.extend(restore)
         # Verify new patch files even when no pin changes. This catches conflicts
         # before changing another dependency, including newly owned untracked files.
-        reverting = {path for path, _ in actions}
+        reverting = {path for _, _, path, _ in actions}
         for entry in self.entries:
             source = source_path(self.root, entry['path'])
             if not initialized(source):
@@ -380,11 +381,13 @@ def setup(root, patches, jobs=4, *, bootstrap=True):
     # Retain the old receipt until the replacement has been fully verified. A
     # network interruption leaves either recognized base or recognized patched
     # bytes, so another run can resume without a reset/clean/force operation.
-    for path, data in actions:
+    for source, name, path, data in actions:
         if data is None:
             path.unlink()
         else:
-            path.write_bytes(data)
+            # Let Git apply the platform's checkout filters (notably CRLF on
+            # Windows) so the restored managed file is clean before submodule update.
+            git(source, 'restore', '--source', head(source), '--worktree', '--', name)
     git(root, 'submodule', 'sync', '--recursive', capture=False)
     git(root, '-c', 'submodule.recurse=false', 'submodule', 'update', '--init',
         '--recursive', '--checkout', '--depth', '1', '--jobs', str(jobs), capture=False)

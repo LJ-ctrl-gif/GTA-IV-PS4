@@ -1,0 +1,194 @@
+name: Native PS4 PKG Build
+# Re-run native packaging after the Mesa validation correction.
+
+on:
+  push:
+    branches: [automation/ps4-runtime-assets, feature/gta-iv-setup-manager]
+    paths:
+      - "ps4/**"
+      - "glue/rexglue-sdk-main/gta4-recomp/CMakeLists.txt"
+      - "glue/rexglue-sdk-main/gta4-recomp/src/setup_manager_main.cpp"
+      - ".github/workflows/ps4-native-build.yml"
+      - "tools/setup_repo.py"
+      - "tools/**"
+      - "CMakeLists.txt"
+      - "glue/CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gta4-ps4-pkg-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Provision toolchain, compile PS4 executable and package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      LR_ROOT: ${{ github.workspace }}/../libertyrecomp-ps4-build
+      DOLPHIN_BUILD: ${{ github.workspace }}/../dolphinps4-build
+      PSB: ${{ github.workspace }}/../dolphinps4-build
+      OPENORBIS: /opt/pacbrew/ps4/openorbis
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/share/dotnet
+          df -h /
+
+      - name: Install Linux and PacBrew prerequisites
+        run: |
+          # setup-dotnet installs the required SDK later; this stale runner source is unnecessary.
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/dotnet*.list
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake libtool cmake nasm git curl python3 python3-pip python3-venv pkg-config zip unzip rsync libarchive-tools pacman-package-manager makepkg
+          sudo install -d /etc/pacman.d
+          printf '%s\n' 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' | sudo tee /etc/pacman.d/mirrorlist
+          sudo tee -a /etc/pacman.conf >/dev/null <<'PACMAN'
+          [pacbrew]
+          SigLevel = Optional TrustAll
+          Server = https://pacman.mydedibox.fr/pacbrew/packages/
+          PACMAN
+          sudo pacman -Sy --noconfirm
+          sudo pacman -S --noconfirm --needed ps4-openorbis ps4-openorbis-portlibs
+          test -x "$OPENORBIS/bin/ld.lld"
+          test -x "$OPENORBIS/bin/create-fself"
+          test -f "$OPENORBIS/bin/linux/PkgTool.Core"
+
+      - name: Install LLVM 21 host tools
+        run: |
+          curl -fsSL https://apt.llvm.org/llvm.sh -o "$RUNNER_TEMP/llvm.sh"
+          sudo bash "$RUNNER_TEMP/llvm.sh" 21
+          sudo apt-get install -y clang-21 lld-21 llvm-21
+          for tool in clang-21 clang++-21 ld.lld-21 llvm-ar-21 llvm-ranlib-21 llvm-nm-21 llvm-objcopy-21 llvm-strip-21; do
+            command -v "$tool"
+          done
+
+      - name: Install CMake, Ninja and .NET runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Install Python build tools
+        run: |
+          python3 -m pip install --break-system-packages 'cmake>=3.29,<4' ninja
+          cmake --version
+          ninja --version
+          dotnet --list-runtimes
+
+      - name: Prepare full project source and pinned public dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p "$LR_ROOT/src"
+          git clone --local "$GITHUB_WORKSPACE" "$LR_ROOT/src/LibertyRecomp"
+          cd "$LR_ROOT/src/LibertyRecomp"
+          git checkout --detach "$GITHUB_SHA"
+          python3 tools/setup_repo.py
+          python3 tools/setup_repo.py --check
+          python3 tools/test_dependency_patches.py
+
+      - name: Prepare pinned DolphinPS4 and Mesa sources
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/prepare-mesa-source.sh
+          mkdir -p "$DOLPHIN_BUILD/src"
+          git clone https://github.com/dolphin-emu/dolphin.git "$DOLPHIN_BUILD/src/dolphin"
+          git -C "$DOLPHIN_BUILD/src/dolphin" checkout --detach 771fb154059c5812d6a715a23226249cc42877a2
+          git -C "$DOLPHIN_BUILD/src/dolphin" submodule update --init --recursive -- Externals/glslang
+          git clone --depth 1 --branch libdrm-2.4.125 https://gitlab.freedesktop.org/mesa/drm.git "$DOLPHIN_BUILD/src/libdrm"
+          test -d "$DOLPHIN_BUILD/src/dolphin/Externals/glslang/glslang"
+          test -d "$DOLPHIN_BUILD/src/libdrm/include/drm"
+
+      - name: Build PS4 C++ sysroot and runtime
+        run: |
+          set -euo pipefail
+          export PSB="$DOLPHIN_BUILD"
+          cd "$DOLPHIN_BUILD/DolphinPS4"
+          chmod +x toolchain/*.sh
+          source toolchain/env.sh
+          bash toolchain/prepare-sysroot.sh
+          chmod +x "$DOLPHIN_BUILD/DolphinPS4/toolchain/bin/ps4-"*
+          ls -l "$DOLPHIN_BUILD/DolphinPS4/toolchain/bin/ps4-"*
+          bash toolchain/build-libcxx.sh
+          bash toolchain/build-runtime.sh
+          test -f "$DOLPHIN_BUILD/sysroot/lib/libc++.a"
+          test -f "$DOLPHIN_BUILD/sysroot/lib/libc++abi.a"
+
+      - name: Install Mesa Python environment
+        run: |
+          set -euo pipefail
+          python3 -m venv "$DOLPHIN_BUILD/mesa-venv"
+          "$DOLPHIN_BUILD/mesa-venv/bin/pip" install --upgrade pip
+          "$DOLPHIN_BUILD/mesa-venv/bin/pip" install meson mako pyyaml packaging
+
+      - name: Prepare host shader tools and DXC
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/setup-toolchain.sh
+
+      - name: Build pinned PS4 Mesa RADV libraries
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/build-mesa.sh setup
+
+      - name: Verify complete native build prerequisites
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/check-build-prerequisites.sh
+
+      - name: Compile Liberty Recompiled and GTA IV Setup Manager for PS4
+        run: |
+          # Link against the RADV archive without re-adding Mesa-owned WSI/runtime archives.
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/build-ps4.sh all
+
+      - name: Create GTA IV Setup Manager PS4 fake PKG
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/package-setup-manager.sh 01.00
+          test -s "$LR_ROOT/out/IV0000-GIVS00001_00-GTAIVSETUPMGR000.pkg"
+
+      - name: Create PS4 fake PKG
+        run: |
+          set -euo pipefail
+          cd "$LR_ROOT/src/LibertyRecomp"
+          bash ps4/scripts/package-ps4.sh 01.00
+          test -n "$(find "$LR_ROOT/out" -maxdepth 1 -type f -name '*.pkg' -print -quit)"
+          ls -lh "$LR_ROOT/out"/*.pkg
+          test -s "$LR_ROOT/oelf/v01.00.oelf"
+
+      - name: Stage verified PS4 PKG and symbols
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          cp "$LR_ROOT"/out/*.pkg "$GITHUB_WORKSPACE/artifacts/"
+          cp "$LR_ROOT/oelf/v01.00.oelf" "$GITHUB_WORKSPACE/artifacts/"
+          test -s "$GITHUB_WORKSPACE/artifacts/IV0000-LBTY00001_00-LIBERTYRECOMP000.pkg"
+          test -s "$GITHUB_WORKSPACE/artifacts/IV0000-GIVS00001_00-GTAIVSETUPMGR000.pkg"
+          test -s "$GITHUB_WORKSPACE/artifacts/v01.00.oelf"
+          ls -lh "$GITHUB_WORKSPACE"/artifacts/*
+
+      - name: Upload verified PS4 PKG and symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: GTA-IV-PS4-APPS-01.00
+          if-no-files-found: error
+          retention-days: 30
+          path: artifacts/*

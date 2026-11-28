@@ -5,6 +5,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/ps4-env.sh"
 step="${1:-all}"; shift || true
 cd "$LR_SRC"
+bash "$LR_SCRIPTS/check-build-prerequisites.sh" || exit $?
 LOGS="$LR_ROOT/logs"; mkdir -p "$LOGS"
 BUILD_DIR="$LR_SRC/out/build/ps4-release"
 
@@ -34,6 +35,6 @@ if [ "$step" = configure ] || [ "$step" = all ]; then
     rc=${PIPESTATUS[0]}; [ $rc -eq 0 ] || { echo "CONFIGURE FAILED ($rc)"; exit $rc; }
 fi
 if [ "$step" = build ] || [ "$step" = all ]; then
-    cmake --build "$BUILD_DIR" --target LibertyRecomp -- -k 0 "$@" 2>&1 | tee "$LOGS/build.log"
+    cmake --build "$BUILD_DIR" --target LibertyRecomp GTAIVSetupManager -- -k 0 "$@" 2>&1 | tee "$LOGS/build.log"
     rc=${PIPESTATUS[0]}; echo "BUILD EXIT $rc"; exit $rc
 fi
