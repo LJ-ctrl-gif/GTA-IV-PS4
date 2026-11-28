@@ -65,6 +65,28 @@ Scan ScanFiles() {
   ec.clear();
   s.update = fs::is_directory(game / "update", ec) && !ec;
 
+  // Keep a phone-friendly transfer guide beside the status report. GoldHEN's
+  // existing FTP service is the receiver; this utility does not open a new
+  // network listener or modify the user's existing FTP configuration.
+  const fs::path guide_path = root / "transfer-guide.txt";
+  ec.clear();
+  if (!fs::exists(guide_path, ec) && !ec) {
+    std::ofstream guide(guide_path);
+    if (guide) {
+      guide << "GTA IV SETUP MANAGER - LOCAL TRANSFER GUIDE\\n"
+            << "1. On PS4, enable GoldHEN FTP in GoldHEN settings.\\n"
+            << "2. Note the PS4 LAN IP shown by the console network settings.\\n"
+            << "3. On your Android phone, connect AndFTP to that IP, port 2121, "
+               "protocol FTP (plain).\\n"
+            << "4. Browse to /data/LibertyRecomp/game/ on the PS4.\\n"
+            << "5. Upload only compatible game files you are authorized to use.\\n"
+            << "6. Return here and choose SCAN AGAIN after the transfer finishes.\\n"
+            << "Do not delete or overwrite existing files unless you have a backup.\\n";
+    } else if (s.error.empty()) {
+      s.error = "Cannot create transfer-guide.txt";
+    }
+  }
+
   std::ofstream status(root / "setup-status.txt", std::ios::trunc);
   if (status) {
     status << "GTA IV SETUP MANAGER\nLast scan: " << Now()
@@ -113,10 +135,15 @@ class SetupDialog final : public rex::ui::ImGuiDialog {
       ImGui::BulletText("default.xexp: %s", scan_.xexp ? "FOUND" : "MISSING");
       ImGui::BulletText("update/: %s", scan_.update ? "FOUND" : "NOT DETECTED");
       ImGui::Spacing();
-      ImGui::Text("TRANSFER DESTINATION");
-      ImGui::TextWrapped("%s", (fs::path(kRoot) / "game").string().c_str());
-      ImGui::TextWrapped("FTP only transfers files. It cannot prepare the required game data. "
-                         "Use compatible prepared files you are authorized to use.");
+      ImGui::Text("ANDROID TO PS4 TRANSFER");
+      ImGui::BulletText("Receiver: GoldHEN FTP already running on your PS4");
+      ImGui::BulletText("Port: 2121  |  Protocol: FTP (plain)");
+      ImGui::TextWrapped("Destination: %s", (fs::path(kRoot) / "game").string().c_str());
+      ImGui::TextWrapped("On Android, use AndFTP with your PS4 LAN IP and upload "
+                         "your authorized prepared files to the destination above.");
+      ImGui::TextWrapped("When upload finishes, select SCAN AGAIN to refresh the "
+                         "file checks. Transfer guide: /data/LibertyRecomp/transfer-guide.txt");
+      ImGui::TextDisabled("This manager does not download or generate copyrighted game data.");
       if (!scan_.error.empty())
         ImGui::TextColored(ImVec4(1, .3f, .35f, 1), "ERROR: %s", scan_.error.c_str());
       ImGui::Separator();
